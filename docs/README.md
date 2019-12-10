@@ -21,6 +21,10 @@ And then execute:
 Or install it yourself as:
 
     $ gem install resource_policy
+    
+## Documentation
+
+All details about gem usage can be found here: https://samesystem.github.io/resource_policy
 
 ## Usage
 
