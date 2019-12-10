@@ -1,0 +1,42 @@
+require: rubocop-rspec
+
+RSpec/NestedGroups:
+  Enabled: false
+
+Metrics/LineLength:
+  Enabled: true
+  Max: 120
+
+Metrics/BlockLength:
+  Exclude:
+    - spec/**/*.rb
+Metrics/ModuleLength:
+  Exclude:
+    - spec/**/*_spec.rb
+Metrics/ClassLength:
+  Exclude:
+    - spec/**/*_spec.rb
+
+Lint/AmbiguousBlockAssociation:
+  Exclude:
+    - spec/**/*.rb
+
+Naming/UncommunicativeMethodParamName:
+  AllowedNames:
+    - 'to'
+    - 'at'
+    - 'on'
+    - 'id'
+    - 'in'
+    - 'as'
+
+Style/ClassAndModuleChildren:
+  Exclude:
+    - spec/**/*_spec.rb
+
+AllCops:
+  TargetRubyVersion: 2.5
+  Exclude:
+    - bin/*
+    - graphql_rails.gemspec
+    - Rakefile
