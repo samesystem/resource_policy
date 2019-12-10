@@ -10,6 +10,7 @@ Metrics/LineLength:
 Metrics/BlockLength:
   Exclude:
     - spec/**/*.rb
+    - resource_policy.gemspec
 Metrics/ModuleLength:
   Exclude:
     - spec/**/*_spec.rb
