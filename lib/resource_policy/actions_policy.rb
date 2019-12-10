@@ -33,9 +33,7 @@ module ResourcePolicy
       def actions_policy
         @actions_policy ||= ActionsPolicy::PolicyConfiguration.new
 
-        if block_given?
-          yield(@actions_policy)
-        end
+        yield(@actions_policy) if block_given?
 
         @actions_policy
       end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module ResourcePolicy
   module AttributesPolicy
     # Class which isolates methods defined via attributes_policy config

@@ -9,7 +9,6 @@ module ResourcePolicy
       require 'resource_policy/concerns/policy_configurable'
       require 'resource_policy/attributes_policy/attribute_configuration'
 
-
       include ResourcePolicy::Concerns::PolicyConfigurable
 
       def initialize(*args)

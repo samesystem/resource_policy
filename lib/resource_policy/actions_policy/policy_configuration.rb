@@ -26,12 +26,11 @@ module ResourcePolicy
 
       def assert_no_overlapping_action_names(other)
         overlapping_actions = action_names & other.action_names
+        return if overlapping_actions.empty?
 
-        if overlapping_actions.any?
-          error_message = \
-            "actions should be defined once, but #{overlapping_actions} where defined in multiple places"
-          raise OverlappingActionError, error_message
-        end
+        error_message = \
+          "actions should be defined once, but #{overlapping_actions} where defined in multiple places"
+        raise OverlappingActionError, error_message
       end
     end
   end

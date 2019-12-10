@@ -3,7 +3,6 @@
 require 'spec_helper'
 
 module ResourcePolicy::AttributesPolicy
-
   RSpec.describe PolicyConfiguration do
     subject(:policy_configuration) { described_class.new }
 

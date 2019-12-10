@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module ResourcePolicy
   module Concerns
     # Contains methods shared by all policy configuration classes

@@ -38,9 +38,7 @@ module ResourcePolicy
       def attributes_policy
         @attributes_policy ||= PolicyConfiguration.new
 
-        if block_given?
-          yield(@attributes_policy)
-        end
+        yield(@attributes_policy) if block_given?
 
         @attributes_policy
       end
