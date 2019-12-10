@@ -1,10 +1,8 @@
-# GraphqlRails
-
-[![Build Status](https://travis-ci.org/samesystem/graphql_rails.svg?branch=master)](https://travis-ci.org/samesystem/graphql_rails)
-[![codecov](https://codecov.io/gh/samesystem/graphql_rails/branch/master/graph/badge.svg)](https://codecov.io/gh/samesystem/graphql_rails)
-[![Documentation](https://readthedocs.org/projects/ansicolortags/badge/?version=latest)](https://samesystem.github.io/graphql_rails)
-
 # ResourcePolicy
+
+[![Build Status](https://travis-ci.org/samesystem/resource_policy.svg?branch=master)](https://travis-ci.org/samesystem/resource_policy)
+[![codecov](https://codecov.io/gh/samesystem/resource_policy/branch/master/graph/badge.svg)](https://codecov.io/gh/samesystem/resource_policy)
+[![Documentation](https://readthedocs.org/projects/ansicolortags/badge/?version=latest)](https://samesystem.github.io/resource_policy)
 
 Gem which allows to protect your resources and their methods with policy rules.
 
