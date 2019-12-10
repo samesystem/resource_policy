@@ -24,8 +24,110 @@ Or install it yourself as:
 
 ## Usage
 
+Policy should be a single point of truth where you can check what kind of actions current user (or anything else) can do to some resource. Later you will see example of `UserPolicy`.
+
+### Actions policy
+
+Action policy defines what kind of actions can be done on resource. In the folowing example `UserPolicy` defines what kind of actions `current_user` can do with other `user`.
+
+#### Define action policy
+
 ```ruby
-class
+class UserPolicy
+  include ResourcePolicy::Policy
+  
+  actions_policy do |c|
+    c.allowed_to(:read) # current_user can always see user
+    c.allowed_to(:write, if: :admin?) # only admin current_user can update user
+  end
+  
+  def initialize(user, current_user:)
+    @user = user
+    @current_user = current_user
+  end
+  
+  private
+  
+  def admin?
+    @current_user.admin?
+  end
+end
+```
+
+#### Using action policy
+
+```ruby
+policy = SomePolicy.new(user, current_user: current_user)
+policy.action(:read).allowed? # => true
+policy.action(:write).allowed? # ... depends on `admin?` result
+```
+
+### Attributes policy
+
+Similar as with actions policy, you can define each field which should be visible or writable by other user
+
+#### Define attributes policy
+
+```ruby
+class SomePolicy
+  include ResourcePolicy::Policy
+  
+  attributes_policy do |c|
+    c.attribute(:email)
+      .allowed(:read) # current_user can always view user.email
+      .allowed(:write, if: :admin?) # only admin current_user can change email
+  end
+  
+  def initialize(user, current_user:)
+    @user = user
+    @current_user = current_user
+  end
+  
+  private
+  
+  def admin?
+    @current_user.admin?
+  end
+end
+```
+
+#### Using attributes policy
+
+```ruby
+policy = SomePolicy.new(user, current_user: current_user)
+policy.attribute(:email).readable? # => true
+policy.action(:email).writable? # ... depends on `admin?` result
+```
+
+#### Using protector
+
+You can use `Policy` to hide some fields. Here is how:
+
+```ruby
+class UserPolicy
+  include ResourcePolicy::Policy
+  
+  attributes_policy do |c|
+    c.attribute(:id).allowed(:read)
+    c.attribute(:salary).allowed(:read, if: :admin?)
+  end
+  
+  ...
+end
+```
+
+Now you can protect `user` like this:
+
+```ruby
+current_user.admin? #=> false
+
+user = User.find(1337)
+user.id #=> 1337
+user.email #=> "john.doe@example.com"
+
+protected_user = UserPolicy.attributes_policy.protect(user, current_user: current_user)
+protected_user.id #=> 1337
+protected_user.email # nil
 ```
 
 ## Development
