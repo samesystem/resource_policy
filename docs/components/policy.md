@@ -131,3 +131,42 @@ attributes_policy.email.readable? # same as `allowed_to?(:read)`
 attributes_policy.email.writable? # same as `allowed_to?(:write)`
 ```
 
+## Usage of Policy#protected_resource
+
+Policy provides `#protected_resource` method which returns wrapped model instance and does not allow to view fields which current_user does not have access to.
+
+Usage example:
+
+```ruby
+class UserPolicy
+  include ResourcePolicy::Policy
+
+  attributes_policy do |c|
+    c.attribute(:id).allowed(:read) # visible to all
+    c.attribute(:salary).allowed(:read, if: :admin?) # only visible to admin
+  end
+
+  def initialize(user, current_user:)
+    @user = user
+    @current_user = current_user
+  end
+
+  def admin?
+    @current_user.admin?
+  end
+end
+```
+
+Now you can protect `user` like this:
+
+```ruby
+current_user.admin? #=> false
+
+user = User.find(1337)
+user.id #=> 1337
+user.email #=> "john.doe@example.com"
+
+policy = UserPolicy.new(user, current_user: current_user)
+policy.protected_resource.id #=> 1337
+policy.protected_resource.email # nil
+```
