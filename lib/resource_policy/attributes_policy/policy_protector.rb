@@ -18,9 +18,9 @@ module ResourcePolicy
 
       attr_reader :policy
 
-      def initialize(target, policy_class:, policy_options:)
+      def initialize(target, policy_class:, policy_args:)
         @target_object = target
-        @policy = policy_class.new(target, policy_options)
+        @policy = policy_class.new(target, *policy_args)
       end
 
       protected
