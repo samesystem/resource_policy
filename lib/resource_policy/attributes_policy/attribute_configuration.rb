@@ -41,6 +41,10 @@ module ResourcePolicy
         allowed_actions.keys
       end
 
+      def defined_action?(action_name)
+        defined_actions.include?(action_name.to_sym)
+      end
+
       def merge(other)
         dup.tap do |new_attribute|
           other.defined_actions.each do |action|

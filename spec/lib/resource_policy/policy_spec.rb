@@ -53,5 +53,11 @@ module ResourcePolicy
         end
       end
     end
+
+    describe '#protected_resource' do
+      subject(:protected_resource) { policy.protected_resource }
+
+      it { is_expected.to be_a(ResourcePolicy::ProtectedResource) }
+    end
   end
 end
