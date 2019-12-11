@@ -21,7 +21,7 @@ And then execute:
 Or install it yourself as:
 
     $ gem install resource_policy
-    
+
 ## Documentation
 
 All details about gem usage can be found here: https://samesystem.github.io/resource_policy
@@ -39,19 +39,19 @@ Action policy defines what kind of actions can be done on resource. In the folow
 ```ruby
 class UserPolicy
   include ResourcePolicy::Policy
-  
+
   actions_policy do |c|
     c.allowed_to(:read) # current_user can always see user
     c.allowed_to(:write, if: :admin?) # only admin current_user can update user
   end
-  
+
   def initialize(user, current_user:)
     @user = user
     @current_user = current_user
   end
-  
+
   private
-  
+
   def admin?
     @current_user.admin?
   end
@@ -61,7 +61,7 @@ end
 #### Using action policy
 
 ```ruby
-policy = SomePolicy.new(user, current_user: current_user)
+policy = UserPolicy.new(user, current_user: current_user)
 policy.action(:read).allowed? # => true
 policy.action(:write).allowed? # ... depends on `admin?` result
 ```
@@ -73,22 +73,22 @@ Similar as with actions policy, you can define each field which should be visibl
 #### Define attributes policy
 
 ```ruby
-class SomePolicy
+class UserPolicy
   include ResourcePolicy::Policy
-  
+
   attributes_policy do |c|
     c.attribute(:email)
       .allowed(:read) # current_user can always view user.email
       .allowed(:write, if: :admin?) # only admin current_user can change email
   end
-  
+
   def initialize(user, current_user:)
     @user = user
     @current_user = current_user
   end
-  
+
   private
-  
+
   def admin?
     @current_user.admin?
   end
@@ -98,7 +98,7 @@ end
 #### Using attributes policy
 
 ```ruby
-policy = SomePolicy.new(user, current_user: current_user)
+policy = UserPolicy.new(user, current_user: current_user)
 policy.attribute(:email).readable? # => true
 policy.action(:email).writable? # ... depends on `admin?` result
 ```
@@ -110,12 +110,12 @@ You can use `Policy` to hide some fields. Here is how:
 ```ruby
 class UserPolicy
   include ResourcePolicy::Policy
-  
+
   attributes_policy do |c|
     c.attribute(:id).allowed(:read)
     c.attribute(:salary).allowed(:read, if: :admin?)
   end
-  
+
   ...
 end
 ```

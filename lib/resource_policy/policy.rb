@@ -10,5 +10,13 @@ module ResourcePolicy
       receiver.send(:include, ::ResourcePolicy::AttributesPolicy)
       receiver.send(:include, ::ResourcePolicy::ActionsPolicy)
     end
+
+    def action(name)
+      actions_policy.public_send(name) if actions_policy.respond_to?(name)
+    end
+
+    def attribute(name)
+      attributes_policy.public_send(name) if attributes_policy.respond_to?(name)
+    end
   end
 end

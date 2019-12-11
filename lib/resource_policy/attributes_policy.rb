@@ -27,6 +27,7 @@ module ResourcePolicy
   module AttributesPolicy
     require 'resource_policy/attributes_policy/policy_configuration'
     require 'resource_policy/attributes_policy/attributes_policy_model'
+    require 'resource_policy/attributes_policy/policy_protector'
 
     # Used for defining class methods
     module ClassMethods
@@ -43,8 +44,8 @@ module ResourcePolicy
         @attributes_policy
       end
 
-      def protect(target, **policy_options)
-        wrapper.new(target, policy_class: self, policy_options: policy_options)
+      def protect(target, *policy_args)
+        wrapper.new(target, policy_class: self, policy_args: policy_args)
       end
 
       def wrapper
