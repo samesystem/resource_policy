@@ -59,5 +59,41 @@ module ResourcePolicy
 
       it { is_expected.to be_a(ResourcePolicy::ProtectedResource) }
     end
+
+    describe '#policy_target' do
+      let(:policy_target) { policy_model.new('something').policy_target }
+
+      context 'when policy class has parent with custom initialize method' do
+        let(:policy_model) do
+          Struct.new(:something) do
+            include ResourcePolicy::Policy
+
+            def initialize(something)
+              super
+            end
+          end
+        end
+
+        it 'sets first initialize argument as policy_target' do
+          expect(policy_target).to eq('something')
+        end
+      end
+
+      context 'when policy class has parent with default initialize method' do
+        let(:policy_model) do
+          Class.new do
+            include ResourcePolicy::Policy
+
+            def initialize(something)
+              super
+            end
+          end
+        end
+
+        it 'sets first initialize argument as policy_target' do
+          expect(policy_target).to eq('something')
+        end
+      end
+    end
   end
 end

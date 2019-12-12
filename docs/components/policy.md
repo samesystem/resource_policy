@@ -21,6 +21,7 @@ class UserPolicy
   end
 
   def initialize(user, current_user:)
+    super # must be called
     @user = user
     @current_user = current_user
   end
@@ -36,6 +37,8 @@ class UserPolicy
   end
 end
 ```
+
+Keep in mind that `super` must be called in initializer.
 
 ## Usage of Policy#action
 
