@@ -26,7 +26,7 @@ class UserPolicy
 
   actions_policy do |c|
     c.allowed_to(:read)
-    c.allowed_to(:write, if: %i[admin? writable?])
+    c.allowed_to(:write, if: %i[admin? admin?])
   end
 
   def initialize(user, current_user)
