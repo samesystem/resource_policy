@@ -13,8 +13,13 @@ module ResourcePolicy
     end
 
     def initialize(*args)
-      super
-      @policy_target = args.first
+      if method(:initialize).super_method.arity > 0
+        super
+      else
+        super()
+      end
+
+      resource_policy_initialize(*args)
     end
 
     def protected_resource
@@ -31,6 +36,12 @@ module ResourcePolicy
 
     def policy_target
       @policy_target
+    end
+
+    private
+
+    def resource_policy_initialize(*args)
+      @policy_target = args.first
     end
   end
 end
