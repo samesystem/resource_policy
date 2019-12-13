@@ -17,13 +17,13 @@ module ResourcePolicy
 
       let(:action_name) { :create }
 
-      context 'when action does not exist' do
+      context 'when action is not marked as "allowed"' do
         it { is_expected.to be_nil }
       end
 
       context 'when action exists' do
         before do
-          policy_model.actions_policy { |c| c.allowed_to(action_name) }
+          policy_model.policy { |c| c.action(action_name).allowed }
         end
 
         it 'returns correct action' do
@@ -43,7 +43,7 @@ module ResourcePolicy
 
       context 'when attribute exists' do
         before do
-          policy_model.attributes_policy do |c|
+          policy_model.policy do |c|
             c.attribute(attribute_name).allowed(:read)
           end
         end
@@ -68,9 +68,7 @@ module ResourcePolicy
           Struct.new(:something) do
             include ResourcePolicy::Policy
 
-            def initialize(something)
-              super
-            end
+            policy.policy_target(:something)
           end
         end
 
@@ -84,8 +82,12 @@ module ResourcePolicy
           Class.new do
             include ResourcePolicy::Policy
 
+            policy.policy_target(:something)
+
+            attr_reader :something
+
             def initialize(something)
-              super
+              @something = something
             end
           end
         end

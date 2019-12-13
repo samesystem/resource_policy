@@ -10,11 +10,9 @@ Here is and example how policy looks like:
 class UserPolicy
   include ResourcePolicy::Policy
 
-  actions_policy do |c|
-    c.allowed_to(:read, if: :readable?)
-  end
+  policy do |c|
+    c.action(:read).allowed(if: :readable?)
 
-  attributes_policy do |c|
     c.attribute(:first_name)
       .allowed(:read, if: :readable?)
       .allowed(:write, if: :writable?)
@@ -48,9 +46,9 @@ Suppose we have policy like this:
 class UserPolicy
   include ResourcePolicy::Policy
 
-  actions_policy do |c|
-    c.allowed_to(:read) # current_user can always see user
-    c.allowed_to(:write, if: :admin?) # only admin current_user can update user
+  policy do |c|
+    c.action(:read).allowed # current_user can always see user
+    c.action(:write).allowed(if: :admin?) # only admin current_user can update user
   end
 
   def initialize(user, current_user:)
@@ -93,7 +91,7 @@ Suppose we have policy like this:
 class UserPolicy
   include ResourcePolicy::Policy
 
-  attributes_policy do |c|
+  policy do |c|
     c.attribute(:email)
       .allowed(:read) # current_user can always view user.email
       .allowed(:write, if: :admin?) # only admin current_user can change email
@@ -144,7 +142,7 @@ Usage example:
 class UserPolicy
   include ResourcePolicy::Policy
 
-  attributes_policy do |c|
+  policy do |c|
     c.attribute(:id).allowed(:read) # visible to all
     c.attribute(:salary).allowed(:read, if: :admin?) # only visible to admin
   end

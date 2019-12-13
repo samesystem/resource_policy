@@ -40,9 +40,9 @@ Action policy defines what kind of actions can be done on resource. In the folow
 class UserPolicy
   include ResourcePolicy::Policy
 
-  actions_policy do |c|
-    c.allowed_to(:read) # current_user can always see user
-    c.allowed_to(:write, if: :admin?) # only admin current_user can update user
+  policy do |c|
+    c.action(:read).allowed # current_user can always see user
+    c.action(:write).allowed(if: :admin?) # only admin current_user can update user
   end
 
   def initialize(user, current_user:)
@@ -76,7 +76,7 @@ Similar as with actions policy, you can define each field which should be visibl
 class UserPolicy
   include ResourcePolicy::Policy
 
-  attributes_policy do |c|
+  policy do |c|
     c.attribute(:email)
       .allowed(:read) # current_user can always view user.email
       .allowed(:write, if: :admin?) # only admin current_user can change email
@@ -111,7 +111,7 @@ You can use `Policy` to hide some fields. Here is how:
 class UserPolicy
   include ResourcePolicy::Policy
 
-  attributes_policy do |c|
+  policy do |c|
     c.attribute(:id).allowed(:read)
     c.attribute(:salary).allowed(:read, if: :admin?)
   end

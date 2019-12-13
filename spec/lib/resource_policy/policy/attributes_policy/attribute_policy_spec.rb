@@ -2,11 +2,11 @@
 
 require 'spec_helper'
 
-module ResourcePolicy::AttributesPolicy
+module ResourcePolicy::Policy::AttributesPolicy
   RSpec.describe AttributePolicy do
     subject(:attribute_policy) { described_class.new(attribute_config, policy: policy) }
 
-    let(:attributes_policy) { PolicyConfiguration.new }
+    let(:policy_configuration) { ::ResourcePolicy::Policy::PolicyConfiguration.new }
     let(:policy) do
       # rubocop:disable RSpec/VerifiedDoubles
       double(
@@ -19,7 +19,7 @@ module ResourcePolicy::AttributesPolicy
     end
 
     let(:attribute_config) do
-      AttributeConfiguration.new(:attr, attributes_policy: attributes_policy)
+      AttributeConfiguration.new(:attr, policy_configuration: policy_configuration)
     end
 
     describe '#allowed_to?' do
