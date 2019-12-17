@@ -15,6 +15,11 @@ module ResourcePolicy
         yield(@policy) if block_given?
         @policy
       end
+
+      def inherited(subclass)
+        super
+        subclass.instance_variable_set(:@policy, policy.dup)
+      end
     end
 
     def self.included(receiver)

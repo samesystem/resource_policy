@@ -12,6 +12,35 @@ module ResourcePolicy
       end
     end
 
+    describe '.inherited' do
+      let(:child_policy_model) do
+        Class.new(policy_model) do
+          policy do |c|
+            c.action(:write).allowed
+          end
+        end
+      end
+
+      before do
+        policy_model.policy do |c|
+          c.action(:read).allowed
+        end
+      end
+
+      context 'when parent class has some attributes or actions defined' do
+        it 'includes partent class attributes in child class' do
+          expect(child_policy_model.policy.actions.keys).to match_array(%i[read write])
+        end
+      end
+
+      context 'when child class has some attributes or actions defined' do
+        it 'does not change parent class policy configuration' do
+          child_policy_model
+          expect(policy_model.policy.actions.keys).to match_array(%i[read])
+        end
+      end
+    end
+
     describe '#action' do
       subject(:action) { policy.action(action_name) }
 

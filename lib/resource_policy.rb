@@ -2,7 +2,7 @@
 
 require 'resource_policy/version'
 
-
+# Root namespace
 module ResourcePolicy
   class Error < StandardError; end
 

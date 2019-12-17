@@ -42,7 +42,6 @@ module ResourcePolicy::Policy
       end
     end
 
-
     describe '#action' do
       let(:action) { policy_configuration.action(action_name) }
       let(:action_name) { :read }
@@ -86,15 +85,51 @@ module ResourcePolicy::Policy
         end
       end
 
-      context 'when defining same action in different groups' do
-        subject(:group) do
-          policy_configuration_with_group.group(:group2_readable?) do |g|
-            g.action(:read).allowed
+      context 'when defining action in a group' do
+        context 'when defining same action in different groups' do
+          subject(:group) do
+            policy_configuration_with_group.group(:group2_readable?) do |g|
+              g.action(:read).allowed
+            end
+          end
+
+          it 'raises error' do
+            expect { group }.to raise_error(MergePolicies::OverlappingActionError)
+          end
+        end
+      end
+
+      context 'when defining attribute group' do
+        let!(:policy_configuration_with_group) do
+          policy_configuration.group(:group_readable?) do |g|
+            g.attribute(:something).allowed(:read)
           end
         end
 
-        it 'raises error' do
-          expect { group }.to raise_error(MergePolicies::OverlappingActionError)
+        context 'when defining same attribute but different action in other group' do
+          subject(:group) do
+            policy_configuration_with_group.group(:group_writable?) do |g|
+              g.attribute(:something).allowed(:write)
+            end
+          end
+
+          it 'updates action' do
+            expect { group }
+              .to change { policy_configuration.attribute(:something).defined_actions }
+              .from([:read]).to([:read, :write])
+          end
+        end
+
+        context 'when defining same attribute action in other group' do
+          subject(:group) do
+            policy_configuration_with_group.group(:group2_readable?) do |g|
+              g.attribute(:something).allowed(:read)
+            end
+          end
+
+          it 'raises error' do
+            expect { group }.to raise_error(MergePolicies::OverlappingActionError)
+          end
         end
       end
     end

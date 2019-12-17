@@ -28,18 +28,6 @@ module ResourcePolicy
     module AttributesPolicy
       require 'resource_policy/policy/attributes_policy/attributes_policy_model'
 
-      # Used for defining class methods
-      module ClassMethods
-        def inherited(subclass)
-          super
-          subclass.instance_variable_set(:@attributes_policy, attributes_policy.dup)
-        end
-      end
-
-      def self.included(base)
-        base.extend(AttributesPolicy::ClassMethods)
-      end
-
       def protected_resource
         @protected_resource ||= ProtectedResource.new(self)
       end

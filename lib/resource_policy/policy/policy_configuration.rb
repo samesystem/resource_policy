@@ -18,11 +18,15 @@ module ResourcePolicy
       EMPTY_CONFIGURATION = EmptyConfiguration.new
 
       def initialize(parent_configuration: EMPTY_CONFIGURATION, extra_group_conditions: [])
-        @attributes = {}
         @actions = {}
         @attributes = {}
         @parent_configuration = parent_configuration
         @extra_group_conditions = extra_group_conditions
+      end
+
+      def initialize_copy(_other)
+        @actions = @actions.dup.each.with_object({}) { |(key, value), result| result[key] = value.dup }
+        @attributes = @attributes.dup.each.with_object({}) { |(key, value), result| result[key] = value.dup }
       end
 
       def policy_target(policy_target_name = nil)
