@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module ResourcePolicy
   module Policy
     # Service object using for merging two policy configurations

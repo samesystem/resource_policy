@@ -116,7 +116,7 @@ module ResourcePolicy::Policy
           it 'updates action' do
             expect { group }
               .to change { policy_configuration.attribute(:something).defined_actions }
-              .from([:read]).to([:read, :write])
+              .from([:read]).to(%i[read write])
           end
         end
 
