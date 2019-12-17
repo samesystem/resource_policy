@@ -29,7 +29,7 @@ module ResourcePolicy
     end
 
     def accessible_attributes
-      attributes = policy.class.attributes_policy.attributes.values.select do |attribute|
+      attributes = policy.class.policy.attributes.values.select do |attribute|
         attribute.defined_action?(:read)
       end
 

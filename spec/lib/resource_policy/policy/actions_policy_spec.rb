@@ -2,15 +2,15 @@
 
 require 'spec_helper'
 
-module ResourcePolicy
+module ResourcePolicy::Policy
   RSpec.describe ActionsPolicy do
     let(:model) do
       Class.new do
-        include ResourcePolicy::ActionsPolicy
+        include ResourcePolicy::Policy
 
-        actions_policy do |c|
-          c.allowed_to(:create, if: :yes)
-          c.allowed_to(:failing, if: :no)
+        policy do |c|
+          c.action(:create).allowed(if: :yes)
+          c.action(:failing).allowed(if: :no)
         end
 
         def yes

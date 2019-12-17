@@ -2,15 +2,16 @@
 
 require 'spec_helper'
 
-module ResourcePolicy
+module ResourcePolicy::Policy
   RSpec.describe AttributesPolicy do
     subject(:policy_instance) { policy_class.new(target, viewer) }
 
     let(:policy_class) do
       Struct.new(:target, :viewer) do
-        include ResourcePolicy::AttributesPolicy
+        include ResourcePolicy::Policy
 
-        attributes_policy do |c|
+        policy do |c|
+          c.policy_target :target
           c.attribute(:some_attribute)
            .allowed(:read, if: :readable?)
            .allowed(:write, if: :writable?)

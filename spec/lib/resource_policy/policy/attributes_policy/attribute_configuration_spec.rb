@@ -2,11 +2,11 @@
 
 require 'spec_helper'
 
-module ResourcePolicy::AttributesPolicy
+module ResourcePolicy::Policy::AttributesPolicy
   RSpec.describe AttributeConfiguration do
-    subject(:attribute_configuration) { described_class.new(:attr, attributes_policy: attributes_policy) }
+    subject(:attribute_configuration) { described_class.new(:attr, policy_configuration: policy_configuration) }
 
-    let(:attributes_policy) { PolicyConfiguration.new }
+    let(:policy_configuration) { ::ResourcePolicy::Policy::PolicyConfiguration.new }
 
     describe '#allowed' do
       subject(:allowed) { attribute_configuration.allowed(:read) }
@@ -52,11 +52,11 @@ module ResourcePolicy::AttributesPolicy
       subject(:merge) { attribute_configuration.merge(other_attribute_configuration) }
 
       let(:attribute_configuration) do
-        described_class.new(:attr, attributes_policy: attributes_policy).allowed(:write, if: :monday?)
+        described_class.new(:attr, policy_configuration: policy_configuration).allowed(:write, if: :monday?)
       end
 
       let(:other_attribute_configuration) do
-        described_class.new(:attr, attributes_policy: attributes_policy).allowed(:write, if: :sunday?)
+        described_class.new(:attr, policy_configuration: policy_configuration).allowed(:write, if: :sunday?)
       end
 
       it 'does not modify initial attribute config' do

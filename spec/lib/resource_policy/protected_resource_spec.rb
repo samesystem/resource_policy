@@ -10,7 +10,8 @@ module ResourcePolicy
       Struct.new(:target, :viewer) do
         include ResourcePolicy::Policy
 
-        attributes_policy do |c|
+        policy do |c|
+          c.policy_target :target
           c.attribute(:some_attribute)
            .allowed(:read, if: :readable?)
            .allowed(:write, if: :writable?)

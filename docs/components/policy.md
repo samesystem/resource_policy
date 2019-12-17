@@ -2,7 +2,7 @@
 
 `Policy` includes both `AttributesPolicy` and `ActionsPolicy` modules. Their features are described separately, so read more there if you need more info.
 
-## Basic usage
+## Policy Configuration
 
 Here is and example how policy looks like:
 
@@ -10,18 +10,17 @@ Here is and example how policy looks like:
 class UserPolicy
   include ResourcePolicy::Policy
 
-  actions_policy do |c|
-    c.allowed_to(:read, if: :readable?)
-  end
+  policy do |c|
+    c.policy_target :user
 
-  attributes_policy do |c|
+    c.action(:read).allowed(if: :readable?)
+
     c.attribute(:first_name)
       .allowed(:read, if: :readable?)
       .allowed(:write, if: :writable?)
   end
 
   def initialize(user, current_user:)
-    super # must be called
     @user = user
     @current_user = current_user
   end
@@ -38,7 +37,34 @@ class UserPolicy
 end
 ```
 
-Keep in mind that `super` must be called in initializer.
+### policy#group
+
+Sometimes you might have action groups which share same conditions. In this case you can group then using `#group` method:
+
+```ruby
+class UserPolicy
+  include ResourcePolicy::Policy
+
+  policy do |c|
+    c.group(:user_itself?) do |g|
+      g.action(:change_password).allowed
+      g.action(:destroy).allowed(if: :admin?)
+    end
+  end
+
+  private
+
+  def admin?
+    ...
+  end
+end
+```
+
+In this case:
+
+* `change_password` will be allowed if `user_itself?` returns `true`;
+* `destroy` will be allowed if both `user_itself?` and ``admin?` returns `true`.
+
 
 ## Usage of Policy#action
 
@@ -48,9 +74,9 @@ Suppose we have policy like this:
 class UserPolicy
   include ResourcePolicy::Policy
 
-  actions_policy do |c|
-    c.allowed_to(:read) # current_user can always see user
-    c.allowed_to(:write, if: :admin?) # only admin current_user can update user
+  policy do |c|
+    c.action(:read).allowed # current_user can always see user
+    c.action(:write).allowed(if: :admin?) # only admin current_user can update user
   end
 
   def initialize(user, current_user:)
@@ -93,7 +119,7 @@ Suppose we have policy like this:
 class UserPolicy
   include ResourcePolicy::Policy
 
-  attributes_policy do |c|
+  policy do |c|
     c.attribute(:email)
       .allowed(:read) # current_user can always view user.email
       .allowed(:write, if: :admin?) # only admin current_user can change email
@@ -136,7 +162,7 @@ attributes_policy.email.writable? # same as `allowed_to?(:write)`
 
 ## Usage of Policy#protected_resource
 
-Policy provides `#protected_resource` method which returns wrapped model instance and does not allow to view fields which current_user does not have access to.
+Policy provides `#protected_resource` method which returns wrapped model instance and does not allow to view fields which current_user does not have access to. You must define `policy_target` in order to be able to use `protected_resource` feature
 
 Usage example:
 
@@ -144,7 +170,8 @@ Usage example:
 class UserPolicy
   include ResourcePolicy::Policy
 
-  attributes_policy do |c|
+  policy do |c|
+    c.policy_target(:user) # method name which returns target
     c.attribute(:id).allowed(:read) # visible to all
     c.attribute(:salary).allowed(:read, if: :admin?) # only visible to admin
   end
