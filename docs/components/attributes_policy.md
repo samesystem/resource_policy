@@ -1,20 +1,7 @@
 # ResourcePolicy::AttributesPolicy
 
-## AttributesPolicy.attributes_policy
 
-To add attributes policy config, call `attributes_policy` in your policy class, like this:
-
-```ruby
-class UserPolicy
-  include ResourcePolicy::AttributesPolicy
-
-  attributes_policy do |c|
-    c.attribute(:first_name).allowed(:read)
-  end
-end
-```
-
-### attributes_policy#attribute
+### policy#attribute
 
 Attributes policy allows you to define separate attributes.
 
@@ -24,7 +11,7 @@ Using `attribute#allowed` method you can define conditions for each attribute an
 class UserPolicy
   include ResourcePolicy::AttributesPolicy
 
-  attributes_policy do |c|
+  policy do |c|
     c.attribute(:first_name)
       .allowed(:read)
       .allowed(:write, if: %i[admin? writable?])

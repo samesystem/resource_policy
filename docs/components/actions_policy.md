@@ -1,32 +1,18 @@
 # ResourcePolicy::ActionsPolicy
 
-## ActionsPolicy.actions_policy
-
-To add actions policy config, call `actions_policy` in your policy class, like this:
-
-```ruby
-class UserPolicy
-  include ResourcePolicy::ActionsPolicy
-
-  actions_policy do |c|
-    c.allowed_to(:read)
-  end
-end
-```
-
-### actions_policy#allowed_to
+## policy#action
 
 Actions policy allows you to define config for each action.
 
-Using `allowed_to` method you can define conditions for each action:
+Using `action` and `allowed` methods chain you can define conditions for each action:
 
 ```ruby
 class UserPolicy
-  include ResourcePolicy::ActionsPolicy
+  include ResourcePolicy::Policy
 
-  actions_policy do |c|
-    c.allowed_to(:read)
-    c.allowed_to(:write, if: %i[admin? admin?])
+  policy do |c|
+    c.action(:read).allowed
+    c.action(:write).allowed(if: %i[admin? admin?])
   end
 
   def initialize(user, current_user)
@@ -53,17 +39,19 @@ This config means:
 * `write` action is allowed only if both `admin?` and `writable?` methods returns `true`.
 
 
-### actions_policy#group
+### policy#group
 
 Sometimes you might have action groups which share same conditions. In this case you can group then using `#group` method:
 
 ```ruby
 class UserPolicy
-  include ResourcePolicy::ActionsPolicy
+  include ResourcePolicy::Policy
 
-  group(:user_itself?) do |c|
-    c.allowed_to(:change_password)
-    c.allowed_to(:destroy, if: :admin?)
+  policy do |c|
+    c.group(:user_itself?) do |g|
+      g.allowed_to(:change_password)
+      g.allowed_to(:destroy, if: :admin?)
+    end
   end
 
   private
