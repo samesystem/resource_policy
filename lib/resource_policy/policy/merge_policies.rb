@@ -27,7 +27,6 @@ module ResourcePolicy
 
       def merge_actions
         other_policy.actions.values.each do |action|
-          raise_overlapping_action_error(action) if policy.action(action.name).configured?
           policy.action(action.name).allowed(if: action.conditions)
         end
       end
@@ -41,14 +40,6 @@ module ResourcePolicy
             policy.attribute(attribute.name).allowed(action_name, if: conditions)
           end
         end
-      end
-
-      def raise_overlapping_action_error(action)
-        error_message = \
-          'actions should be defined only once, ' \
-          "but #{action.name} was defined multiple times"
-
-        raise OverlappingActionError, error_message
       end
 
       def ensure_non_overlapping_attributes
