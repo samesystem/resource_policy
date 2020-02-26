@@ -32,33 +32,12 @@ module ResourcePolicy
       end
 
       def merge_attributes
-        ensure_non_overlapping_attributes
-
         other_policy.attributes.values.each do |attribute|
           attribute.defined_actions.each do |action_name|
             conditions = attribute.conditions_for(action_name)
             policy.attribute(attribute.name).allowed(action_name, if: conditions)
           end
         end
-      end
-
-      def ensure_non_overlapping_attributes
-        other_policy.attributes.values.each do |attribute|
-          attribute.defined_actions.each do |action_name|
-            if policy.attribute(attribute.name).defined_actions.include?(action_name)
-              raise_overlapping_attribute_error(attribute, action_name)
-            end
-          end
-        end
-      end
-
-      def raise_overlapping_attribute_error(attribute, action)
-        error_message = \
-          'attribute actions should be defined only once, but ' \
-          "attribute #{attribute.name.inspect} action #{action.inspect} " \
-          'was defined multiple times'
-
-        raise OverlappingActionError, error_message
       end
     end
   end

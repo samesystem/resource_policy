@@ -127,8 +127,9 @@ module ResourcePolicy::Policy
             end
           end
 
-          it 'raises error' do
-            expect { group }.to raise_error(MergePolicies::OverlappingActionError)
+          it 'updates attribute conditions' do
+            conditions = group.attribute(:something).conditions_for(:read)
+            expect(conditions).to match_array(%i[group_readable? group2_readable?])
           end
         end
       end
