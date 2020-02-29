@@ -29,7 +29,7 @@ GEM
       pry (~> 0.10)
     rack (2.0.8)
     rainbow (3.0.0)
-    rake (10.5.0)
+    rake (13.0.1)
     rspec (3.8.0)
       rspec-core (~> 3.8.0)
       rspec-expectations (~> 3.8.0)
@@ -73,7 +73,7 @@ DEPENDENCIES
   bundler (~> 2.0)
   codecov
   pry-byebug
-  rake (~> 10.0)
+  rake (~> 13.0)
   resource_policy!
   rspec (~> 3.0)
   rubocop
