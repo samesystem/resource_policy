@@ -42,7 +42,7 @@ Policy should be a single point of truth where you can check what kind of action
 
 ### Actions policy
 
-Action policy defines what kind of actions can be done on resource. In the following example `UserPolicy` defines what kind of actions `current_user` can do with other `user`.
+Action policy defines what kind of actions can be done on resource. In the folulowing example `UserPolicy` defines what kind of actions `current_user` can do with other `user`.
 
 #### Define action policy
 
