@@ -62,7 +62,6 @@ module ResourcePolicy
         def merged_action_options(action, new_options)
           previous_options = allowed_actions[action]
           options = previous_options || DEFAULT_OPTIONS.dup
-          options[:if] += policy_configuration.action(action).conditions
           options[:if] += Array(new_options[:if])
           options[:if].uniq!
           options

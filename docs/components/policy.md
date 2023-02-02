@@ -144,7 +144,7 @@ then we can check each attribute like this:
 policy = UserPolicy.new(user, current_user: current_user)
 policy.attribute(:email).allowed_to?(:change) # => false - no such rule
 policy.attribute(:email).readable? # => true
-policy.action(:email).writable? # ... depends on `admin?` result
+policy.attribute(:email).writable? # ... depends on `admin?` result
 ```
 
 ## Usage of Policy#attributes_policy

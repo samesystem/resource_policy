@@ -65,4 +65,4 @@ In this case:
 
 * `password` will be allowed to `write` only if `user_itself?` returns `true`.
 * `email` will be allowed to `read` and `write` only if `user_itself?` returns `true`.
-* `childrend` will be allowed to `read` if both `user_itself?` **and** `parent?` returns `true`.
+* `children` will be allowed to `read` if both `user_itself?` **and** `parent?` returns `true`.
