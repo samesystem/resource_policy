@@ -8,7 +8,13 @@ Gem which allows to protect your resources and their methods with policy rules.
 
 ## Installation
 
-Add this line to your application's Gemfile:
+Add this line to your Ruby on Rails application's Gemfile:
+
+```ruby
+gem 'resource_policy', require 'resource_policy/rails'
+```
+
+Or add this for any other ruby app:
 
 ```ruby
 gem 'resource_policy'
@@ -16,11 +22,15 @@ gem 'resource_policy'
 
 And then execute:
 
+```sh
     $ bundle
+```
 
 Or install it yourself as:
 
+```sh
     $ gem install resource_policy
+```
 
 ## Documentation
 
@@ -32,7 +42,7 @@ Policy should be a single point of truth where you can check what kind of action
 
 ### Actions policy
 
-Action policy defines what kind of actions can be done on resource. In the folowing example `UserPolicy` defines what kind of actions `current_user` can do with other `user`.
+Action policy defines what kind of actions can be done on resource. In the following example `UserPolicy` defines what kind of actions `current_user` can do with other `user`.
 
 #### Define action policy
 

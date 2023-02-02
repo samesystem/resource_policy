@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.authors       = ['Povilas Jurcys']
   spec.email         = ['po.jurcys@gmail.com']
 
-  spec.summary       = "Access controll for single resource and it's methods"
+  spec.summary       = "Access control for single resource and it's methods"
   spec.homepage      = 'https://github.com/samesystem/resource_policy'
   spec.license       = 'MIT'
 
