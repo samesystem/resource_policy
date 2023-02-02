@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    resource_policy (0.2.0)
+    resource_policy (1.0.0)
 
 GEM
   remote: https://rubygems.org/

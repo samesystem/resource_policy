@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 * Added/Changed/Deprecated/Removed/Fixed/Security: YOUR CHANGE HERE
-*
-* Changed: resource protection is now done using policy instance method instead of class method
 
+## [1.0.0]
+
+* Added Ruby on Rails validator
+* Fixed: attribute policy no longer depends on action policy conditions
+
+## [0.2.0]
+
+* Changed: resource protection is now done using policy instance method instead of class method
