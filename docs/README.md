@@ -123,7 +123,7 @@ class UserPolicy
 
   policy do |c|
     c.attribute(:id).allowed(:read)
-    c.attribute(:salary).allowed(:read, if: :admin?)
+    c.attribute(:email).allowed(:read, if: :admin?)
   end
 
   ...
@@ -139,7 +139,8 @@ user = User.find(1337)
 user.id #=> 1337
 user.email #=> "john.doe@example.com"
 
-protected_user = UserPolicy.attributes_policy.protect(user, current_user: current_user)
+policy = UserPolicy.new(user, current_user)
+protected_user = policy.protected_resource
 protected_user.id #=> 1337
 protected_user.email # nil
 ```

@@ -2,6 +2,6 @@
 * Components
   * [Policy](components/policy)
   * [ActionsPolicy](components/actions_policy)
-  * [ActionsPolicy](components/actions_validator)
+  * [ActionValidator](components/action_validator)
   * [AttributesPolicy](components/attributes_policy)
-  * [ActionsPolicy](components/attributes_validator)
+  * [AttributesValidator](components/attributes_validator)
