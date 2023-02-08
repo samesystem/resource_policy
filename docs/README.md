@@ -51,8 +51,8 @@ class UserPolicy
   include ResourcePolicy::Policy
 
   policy do |c|
-    c.action(:read).allowed # current_user can always see user
-    c.action(:write).allowed(if: :admin?) # only admin current_user can update user
+    c.action(:show).allowed # current_user can always see user
+    c.action(:update).allowed(if: :admin?) # only admin current_user can update user
   end
 
   def initialize(user, current_user:)
@@ -72,8 +72,8 @@ end
 
 ```ruby
 policy = UserPolicy.new(user, current_user: current_user)
-policy.action(:read).allowed? # => true
-policy.action(:write).allowed? # ... depends on `admin?` result
+policy.action(:show).allowed? # => true
+policy.action(:update).allowed? # ... depends on `admin?` result
 ```
 
 ### Attributes policy

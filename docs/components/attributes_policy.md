@@ -12,7 +12,7 @@ class UserPolicy
   include ResourcePolicy::AttributesPolicy
 
   policy do |c|
-    c.attribute(:first_name)
+    c.attribute(:email)
       .allowed(:read)
       .allowed(:write, if: %i[admin? writable?])
   end

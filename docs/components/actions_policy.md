@@ -11,8 +11,8 @@ class UserPolicy
   include ResourcePolicy::Policy
 
   policy do |c|
-    c.action(:read).allowed
-    c.action(:write).allowed(if: %i[admin? admin?])
+    c.action(:show).allowed
+    c.action(:update).allowed(if: %i[admin? admin?])
   end
 
   def initialize(user, current_user)
@@ -35,8 +35,8 @@ If no condition is given then action will be always allowed.
 
 This config means:
 
-* `read` action is always allowed;
-* `write` action is allowed only if both `admin?` and `writable?` methods returns `true`.
+* `show` action is always allowed;
+* `update` action is allowed only if both `admin?` and `writable?` methods returns `true`.
 
 
 ### policy#group
