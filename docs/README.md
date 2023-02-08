@@ -110,7 +110,7 @@ end
 ```ruby
 policy = UserPolicy.new(user, current_user: current_user)
 policy.attribute(:email).readable? # => true
-policy.action(:email).writable? # ... depends on `admin?` result
+policy.attribute(:email).writable? # ... depends on `admin?` result
 ```
 
 #### Using protector
