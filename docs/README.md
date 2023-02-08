@@ -55,7 +55,7 @@ class UserPolicy
     c.action(:update).allowed(if: :admin?) # only admin current_user can update user
   end
 
-  def initialize(user, current_user:)
+  def initialize(user, current_user)
     @user = user
     @current_user = current_user
   end
@@ -71,7 +71,7 @@ end
 #### Using action policy
 
 ```ruby
-policy = UserPolicy.new(user, current_user: current_user)
+policy = UserPolicy.new(user, current_user)
 policy.action(:show).allowed? # => true
 policy.action(:update).allowed? # ... depends on `admin?` result
 ```
@@ -92,7 +92,7 @@ class UserPolicy
       .allowed(:write, if: :admin?) # only admin current_user can change email
   end
 
-  def initialize(user, current_user:)
+  def initialize(user, current_user)
     @user = user
     @current_user = current_user
   end
@@ -108,7 +108,7 @@ end
 #### Using attributes policy
 
 ```ruby
-policy = UserPolicy.new(user, current_user: current_user)
+policy = UserPolicy.new(user, current_user)
 policy.attribute(:email).readable? # => true
 policy.attribute(:email).writable? # ... depends on `admin?` result
 ```

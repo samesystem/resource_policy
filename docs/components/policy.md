@@ -20,7 +20,7 @@ class UserPolicy
       .allowed(:write, if: :writable?)
   end
 
-  def initialize(user, current_user:)
+  def initialize(user, current_user)
     @user = user
     @current_user = current_user
   end
@@ -79,7 +79,7 @@ class UserPolicy
     c.action(:update).allowed(if: :admin?) # only admin current_user can update user
   end
 
-  def initialize(user, current_user:)
+  def initialize(user, current_user)
     @user = user
     @current_user = current_user
   end
@@ -95,7 +95,7 @@ end
 then we can check each action like this:
 
 ```ruby
-policy = UserPolicy.new(user, current_user: current_user)
+policy = UserPolicy.new(user, current_user)
 policy.action(:show).allowed? # => true
 policy.action(:update).allowed? # ... depends on `admin?` result
 ```
@@ -105,7 +105,7 @@ policy.action(:update).allowed? # ... depends on `admin?` result
 Another way to check each action is to use `actions_policy` object like this:
 
 ```ruby
-policy = UserPolicy.new(user, current_user: current_user)
+policy = UserPolicy.new(user, current_user)
 actions_policy = policy.actions_policy
 actions_policy.read.allowed? # => true
 actions_policy.write.allowed? # ... depends on `admin?` result
@@ -125,7 +125,7 @@ class UserPolicy
       .allowed(:write, if: :admin?) # only admin current_user can change email
   end
 
-  def initialize(user, current_user:)
+  def initialize(user, current_user)
     @user = user
     @current_user = current_user
   end
@@ -141,7 +141,7 @@ end
 then we can check each attribute like this:
 
 ```ruby
-policy = UserPolicy.new(user, current_user: current_user)
+policy = UserPolicy.new(user, current_user)
 policy.attribute(:email).allowed_to?(:change) # => false - no such rule
 policy.attribute(:email).readable? # => true
 policy.attribute(:email).writable? # ... depends on `admin?` result
@@ -152,7 +152,7 @@ policy.attribute(:email).writable? # ... depends on `admin?` result
 Another way to check each action is to use `attributes_policy` object like this:
 
 ```ruby
-policy = UserPolicy.new(user, current_user: current_user)
+policy = UserPolicy.new(user, current_user)
 attributes_policy = policy.attributes_policy
 
 attributes_policy.email.allowed_to?(:change) # => false - no such rule
@@ -176,7 +176,7 @@ class UserPolicy
     c.attribute(:salary).allowed(:read, if: :admin?) # only visible to admin
   end
 
-  def initialize(user, current_user:)
+  def initialize(user, current_user)
     @user = user
     @current_user = current_user
   end
@@ -196,7 +196,7 @@ user = User.find(1337)
 user.id #=> 1337
 user.email #=> "john.doe@example.com"
 
-policy = UserPolicy.new(user, current_user: current_user)
+policy = UserPolicy.new(user, current_user)
 policy.protected_resource.id #=> 1337
 policy.protected_resource.email # nil
 ```
