@@ -18,37 +18,54 @@
 module ResourcePolicy
   class ActionValidator < ActiveModel::EachValidator
     def validate_each(record, default_attribute, policy)
-      attribute = options.fetch(:as, default_attribute)
-      action_policy = policy.action(action_name)
-      validate_action_policy(action_policy, record, attribute)
+      validation_options = validation_options_for(record, default_attribute, policy)
+
+      validate_action_policy(**validation_options)
     end
 
     private
 
-    def validate_action_policy(policy, record, attribute)
+    def validation_options_for(record, default_attribute, policy)
+      attribute = fetch_option_value(:as, record: record) { default_attribute }
+      action_name = fetch_option_value(:allowed_to, record: record)
+      action_policy = policy.action(action_name)
+
+      {
+        policy: action_policy,
+        record: record,
+        attribute: attribute,
+        action_name: action_name
+      }
+    end
+
+    def validate_action_policy(policy:, record:, attribute:, action_name:)
       if policy.nil?
-        add_missing_policy_error_for(record, attribute)
+        add_missing_policy_error_for(record, attribute, action_name)
       elsif !policy.allowed?
-        add_not_permitted_error_for(record, attribute)
+        add_not_permitted_error_for(record, attribute, action_name)
       end
     end
 
-    def action_name
-      @action_name ||= options.fetch(:allowed_to)
-    end
-
-    def add_missing_policy_error_for(record, attribute)
+    def add_missing_policy_error_for(record, attribute, action_name)
       record.errors.add(
         attribute,
         "does not have #{action_name.to_s.inspect} action policy defined"
       )
     end
 
-    def add_not_permitted_error_for(record, attribute)
+    def add_not_permitted_error_for(record, attribute, action_name)
       record.errors.add(
         attribute,
         "action #{action_name.to_s.inspect} is not allowed"
       )
+    end
+
+    def fetch_option_value(key, record:, &block)
+      value = options.fetch(key, &block)
+
+      return record.instance_exec(&value) if value.is_a?(Proc)
+
+      value
     end
   end
 end

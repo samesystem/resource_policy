@@ -40,29 +40,40 @@ module ResourcePolicy
 
     def validate_attribute_policy(attribute_policy, record:, hash_attribute:)
       if attribute_policy.nil?
-        add_missing_policy_error_for(record, hash_attribute)
-      elsif !attribute_policy.allowed_to?(access_level)
-        add_not_permitted_error_for(record, hash_attribute)
+        return add_missing_policy_error_for(record, attribute: hash_attribute)
+      end
+
+      access_level = access_level_for(record)
+      if !attribute_policy.allowed_to?(access_level)
+        return add_not_permitted_error_for(record, attribute: hash_attribute)
       end
     end
 
-    def access_level
-      @access_level ||= options.fetch(:allowed_to)
+    def access_level_for(record)
+      fetch_option_value(:allowed_to, record: record)
     end
 
     def hash_value_for(record)
       record.send(options.fetch(:apply_to))
     end
 
-    def add_missing_policy_error_for(record, attribute)
+    def add_missing_policy_error_for(record, attribute:)
       record.errors.add(attribute, 'does not have attribute policy defined')
     end
 
-    def add_not_permitted_error_for(record, attribute)
+    def add_not_permitted_error_for(record, attribute:)
       record.errors.add(
         attribute,
-        "attribute action #{access_level.to_s.inspect} is not allowed"
+        "attribute action #{access_level_for(record).to_s.inspect} is not allowed"
       )
+    end
+
+    def fetch_option_value(key, record:, &block)
+      value = options.fetch(key, &block)
+
+      return record.instance_exec(&value) if value.is_a?(Proc)
+
+      value
     end
   end
 end

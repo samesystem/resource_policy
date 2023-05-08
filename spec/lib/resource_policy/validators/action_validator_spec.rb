@@ -13,6 +13,10 @@ RSpec.describe ResourcePolicy::ActionValidator do
       Struct.new(:policy) do
         include ActiveModel::Validations
         validates :policy, 'resource_policy/action': { allowed_to: action, as: :user }
+
+        def custom_allowed_to
+          :create
+        end
       end
     end
 
@@ -59,6 +63,14 @@ RSpec.describe ResourcePolicy::ActionValidator do
         record.valid?
         expect(record.errors.messages)
           .to eq(user: ['does not have "does_not_exist" action policy defined'])
+      end
+    end
+
+    context 'when "allowed_to" is a proc' do
+      let(:action_type) { -> { custom_allowed_to } }
+
+      it 'keeps record valid' do
+        expect { record.valid? }.not_to change(record.errors, :count)
       end
     end
   end
