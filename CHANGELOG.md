@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Added: short-hand method for getting allowed actions
 * Added/Changed/Deprecated/Removed/Fixed/Security: YOUR CHANGE HERE
 
 ## [1.1.0]

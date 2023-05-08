@@ -111,6 +111,24 @@ actions_policy.read.allowed? # => true
 actions_policy.write.allowed? # ... depends on `admin?` result
 ```
 
+In order to get all actions do:
+
+```ruby
+policy = UserPolicy.new(user, current_user)
+actions_policy = policy.actions_policy
+
+actions_policy.actions
+```
+
+In order to get all only allowed action names do:
+
+```ruby
+policy = UserPolicy.new(user, current_user)
+actions_policy = policy.actions_policy
+
+actions_policy.allowed_action_names
+```
+
 ## Usage of Policy#attribute
 
 Suppose we have policy like this:
@@ -158,6 +176,16 @@ attributes_policy = policy.attributes_policy
 attributes_policy.email.allowed_to?(:change) # => false - no such rule
 attributes_policy.email.readable? # same as `allowed_to?(:read)`
 attributes_policy.email.writable? # same as `allowed_to?(:write)`
+```
+
+In order to get all allowed attributes do:
+
+```ruby
+policy = UserPolicy.new(user, current_user)
+attributes_policy = policy.attributes_policy
+
+readable_attributes = attributes_policy.all_allowed_to(:read)
+writable_attributes = attributes_policy.all_allowed_to(:write)
 ```
 
 ## Usage of Policy#protected_resource

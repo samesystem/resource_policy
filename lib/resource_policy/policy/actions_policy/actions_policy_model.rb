@@ -18,6 +18,14 @@ module ResourcePolicy
           policy_item(method_name.to_sym)
         end
 
+        def actions
+          config.actions.keys.map { |name| policy_item(name.to_sym) }
+        end
+
+        def allowed_action_names
+          actions.select(&:allowed?).map(&:name)
+        end
+
         def respond_to_missing?(method_name, *args)
           config.actions.key?(method_name.to_sym) || super
         end
