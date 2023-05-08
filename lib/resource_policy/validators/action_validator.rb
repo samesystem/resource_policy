@@ -20,16 +20,16 @@ module ResourcePolicy
     def validate_each(record, default_attribute, policy)
       attribute = options.fetch(:as, default_attribute)
       action_policy = policy.action(action_name)
-      validate_action_policy(action_policy, record:, attribute:)
+      validate_action_policy(action_policy, record, attribute)
     end
 
     private
 
-    def validate_action_policy(policy, record:, attribute:)
+    def validate_action_policy(policy, record, attribute)
       if policy.nil?
-        add_missing_policy_error_for(record, attribute:)
+        add_missing_policy_error_for(record, attribute)
       elsif !policy.allowed?
-        add_not_permitted_error_for(record, attribute:)
+        add_not_permitted_error_for(record, attribute)
       end
     end
 
@@ -37,14 +37,14 @@ module ResourcePolicy
       @action_name ||= options.fetch(:allowed_to)
     end
 
-    def add_missing_policy_error_for(record, attribute:)
+    def add_missing_policy_error_for(record, attribute)
       record.errors.add(
         attribute,
         "does not have #{action_name.to_s.inspect} action policy defined"
       )
     end
 
-    def add_not_permitted_error_for(record, attribute:)
+    def add_not_permitted_error_for(record, attribute)
       record.errors.add(
         attribute,
         "action #{action_name.to_s.inspect} is not allowed"
