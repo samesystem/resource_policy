@@ -10,12 +10,31 @@ module ResourcePolicy
         DEFAULT_OPTIONS = { if: [] }.freeze
         ALLOWED_ACTIONS = %i[read write].freeze
 
-        attr_reader :name
+        attr_reader :name, :nested_policy_builder, :unprotected_reason
 
         def initialize(name, policy_configuration:)
           @name = name
           @allowed_actions = {}
           @policy_configuration = policy_configuration
+        end
+
+        # Declares which policy guards this attribute's value. The block runs on the parent
+        # policy instance, so its own dependencies (app_context, current_user, ...) are in scope.
+        def nested(&builder)
+          @nested_policy_builder = builder
+          self
+        end
+
+        # Declares that the value needs no policy of its own. Explicit so that it is greppable
+        # and shows up in review, rather than being the silent default it is today.
+        def unprotected(because: nil)
+          @unprotected = true
+          @unprotected_reason = because
+          self
+        end
+
+        def unprotected?
+          !!@unprotected
         end
 
         def initialize_copy(other)
@@ -52,7 +71,17 @@ module ResourcePolicy
             other.defined_actions.each do |action|
               new_attribute.allowed(action, if: other.conditions_for(action))
             end
+            new_attribute.copy_protection_from(other)
           end
+        end
+
+        # `merge` and MergePolicies rebuild attributes from their actions only, so without this
+        # a `.nested` declaration silently vanishes inside a `c.group` block or an inherited
+        # policy - which is where most of them live.
+        def copy_protection_from(other)
+          nested(&other.nested_policy_builder) if other.nested_policy_builder
+          unprotected(because: other.unprotected_reason) if other.unprotected?
+          self
         end
 
         private
