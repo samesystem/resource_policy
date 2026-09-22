@@ -70,9 +70,8 @@ module ResourcePolicy
 
     def nested_protection=(mode)
       mode = mode.to_sym
-      unless MODES.include?(mode)
-        raise ArgumentError, "unknown mode #{mode.inspect}, expected one of #{MODES.inspect}"
-      end
+
+      MODES.include?(mode) || raise(ArgumentError, "unknown mode #{mode.inspect}, expected one of #{MODES.inspect}")
 
       @nested_protection = mode
     end

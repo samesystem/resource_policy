@@ -3,7 +3,7 @@
 require 'spec_helper'
 
 module ResourcePolicy
-  RSpec.describe 'nested attribute protection' do # rubocop:disable RSpec/DescribeClass
+  RSpec.describe 'nested attribute protection' do
     subject(:protected_resource) { ProtectedResource.new(policy) }
 
     # Stands in for an ActiveRecord model: something the host app says must carry its own policy.
@@ -31,7 +31,8 @@ module ResourcePolicy
 
     let(:contract_class) do
       Class.new(record_class) do
-        def initialize(hours) # rubocop:disable Lint/MissingSuper
+        def initialize(hours)
+          super()
           @hours = hours
         end
 

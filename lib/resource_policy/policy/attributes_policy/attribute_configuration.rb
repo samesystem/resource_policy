@@ -13,6 +13,7 @@ module ResourcePolicy
         attr_reader :name, :nested_policy_builder, :unprotected_reason
 
         def initialize(name, policy_configuration:)
+          @unprotected = false
           @name = name
           @allowed_actions = {}
           @policy_configuration = policy_configuration
@@ -34,7 +35,7 @@ module ResourcePolicy
         end
 
         def unprotected?
-          !!@unprotected
+          @unprotected
         end
 
         def initialize_copy(other)
