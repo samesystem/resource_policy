@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# Root namespace
 module ResourcePolicy
   # Global configuration.
   #
