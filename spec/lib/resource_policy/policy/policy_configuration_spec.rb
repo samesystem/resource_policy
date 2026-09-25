@@ -55,7 +55,7 @@ module ResourcePolicy::Policy
       end
 
       it 'adds action to actions list' do
-        expect(policy_configuration.actions.keys).to match_array([:read])
+        expect(policy_configuration.actions.keys).to contain_exactly(:read)
       end
 
       it 'does not add condition to other actions' do

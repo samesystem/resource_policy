@@ -145,6 +145,36 @@ protected_user.id #=> 1337
 protected_user.email # nil
 ```
 
+#### Protecting nested values
+
+A protected resource never hands out a raw record. If an attribute returns something guarded by
+its own policy, declare which one, and nested reads run nested rules automatically:
+
+```ruby
+class UserPolicy
+  include ResourcePolicy::Policy
+
+  policy do |c|
+    c.attribute(:current_contract)
+      .allowed(:read)
+      .nested { |contract| ContractPolicy.new(contract, current_user) }
+  end
+
+  ...
+end
+```
+
+```ruby
+protected_user = UserPolicy.new(user, current_user).protected_resource
+
+protected_user.current_contract            # => protected resource, not a raw Contract
+protected_user.current_contract.salary     # => nil unless ContractPolicy allows reading it
+```
+
+This is opt-in and needs a small amount of setup, including what the gem should do when an
+attribute returns a record nobody declared a policy for. See
+[Configuration](components/configuration) for the full details.
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.

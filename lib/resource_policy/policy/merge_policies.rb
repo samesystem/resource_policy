@@ -37,6 +37,7 @@ module ResourcePolicy
             conditions = attribute.conditions_for(action_name)
             policy.attribute(attribute.name).allowed(action_name, if: conditions)
           end
+          policy.attribute(attribute.name).copy_protection_from(attribute)
         end
       end
     end

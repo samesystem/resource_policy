@@ -2,6 +2,6 @@
 
 RSpec.describe ResourcePolicy do
   it 'has a version number' do
-    expect(ResourcePolicy::VERSION).not_to be nil
+    expect(ResourcePolicy::VERSION).not_to be_nil
   end
 end

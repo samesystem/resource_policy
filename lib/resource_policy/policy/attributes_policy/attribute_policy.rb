@@ -24,6 +24,18 @@ module ResourcePolicy
           allowed_to?(:write)
         end
 
+        # Builds the policy guarding this attribute's value, or nil when none is declared.
+        def nested_policy_for(value)
+          builder = attribute_config.nested_policy_builder
+          return nil unless builder
+
+          policy.instance_exec(value, &builder)
+        end
+
+        def unprotected?
+          attribute_config.unprotected?
+        end
+
         def allowed_to?(access_level)
           @allowed_to ||= {}
           level_name = access_level.to_sym
