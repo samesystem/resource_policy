@@ -82,34 +82,6 @@ module ResourcePolicy
       end
     end
 
-    describe '#withhold_denied_nested_read?' do
-      let(:nested_policy) { Struct.new(:contract).new(nil) }
-
-      def withhold?
-        config.withhold_denied_nested_read?(policy: policy, attribute: attribute, nested_policy: nested_policy)
-      end
-
-      context 'when the mode is hard' do
-        it 'withholds the value' do
-          expect(withhold?).to be(true)
-        end
-      end
-
-      context 'when the mode is soft' do
-        before { config.nested_protection = :soft }
-
-        it 'hands the value over, so switching the mode on changes nothing for callers' do
-          expect(withhold?).to be(false)
-        end
-
-        it 'reports which policy denied the read' do
-          withhold?
-
-          expect(reported.map(&:nested_policy)).to eq([nested_policy])
-        end
-      end
-    end
-
     describe '.configure' do
       after { ResourcePolicy.instance_variable_set(:@config, nil) }
 

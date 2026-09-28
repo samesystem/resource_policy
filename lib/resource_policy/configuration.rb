@@ -29,25 +29,6 @@ module ResourcePolicy
       end
     end
 
-    # Describes an attribute of a nested resource the viewer is not allowed to read. Distinct
-    # from DeniedNestedRead, which is about the nested object as a whole.
-    DeniedNestedAttributeRead = Struct.new(:policy, :attribute, keyword_init: true) do
-      def message
-        "#{policy.class} attribute #{attribute.name.inspect} is not readable, and is reached " \
-          'through a nested policy. The value is being handed over anyway because ' \
-          '`nested_protection` is :soft. On :hard it is nil.'
-      end
-    end
-
-    # Describes a nested value the viewer is not allowed to read.
-    DeniedNestedRead = Struct.new(:policy, :attribute, :nested_policy, keyword_init: true) do
-      def message
-        "#{policy.class} attribute #{attribute.name.inspect} is guarded by #{nested_policy.class}, " \
-          'which denies reading it. The value is being handed over anyway because ' \
-          '`nested_protection` is :soft. On :hard it is withheld.'
-      end
-    end
-
     # Nothing is protectable until the host app says what a guarded value looks like, so a
     # gem consumer that has not opted in keeps its current behaviour exactly.
     DEFAULT_PROTECTABLE_CLASS = ->(_klass) { false }
@@ -110,29 +91,6 @@ module ResourcePolicy
 
       reporter.call(event)
       nil
-    end
-
-    # Reports an attribute of a nested resource the viewer may not read, and answers whether it
-    # has to be withheld. A resource the caller asked for by name always applies its own rules;
-    # this is only about the resources the gem wrapped on the caller's behalf, where withholding
-    # is new behaviour a `.nested` declaration would otherwise introduce silently.
-    def withhold_denied_nested_attribute?(policy:, attribute:)
-      return true if hard?
-
-      reporter.call(DeniedNestedAttributeRead.new(policy: policy, attribute: attribute))
-      false
-    end
-
-    # Reports a nested value the viewer may not read, and answers whether it has to be
-    # withheld. `:soft` reports and hands it over, so turning the mode on cannot change what
-    # any caller sees; `:hard` withholds it.
-    def withhold_denied_nested_read?(policy:, attribute:, nested_policy:)
-      return true if hard?
-
-      reporter.call(
-        DeniedNestedRead.new(policy: policy, attribute: attribute, nested_policy: nested_policy)
-      )
-      false
     end
   end
 

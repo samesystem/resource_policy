@@ -4,25 +4,26 @@ module ResourcePolicy
   # Generates resource which has same attributes as policy target,
   # but returns `nil` when attribute in not readable according to policy.
   #
-  # A protected resource never hands out a raw record: a value which is itself guarded by a
-  # policy comes back as that policy's own protected resource, so nested reads run nested rules
-  # without every call site having to remember to ask.
+  # On `:hard` a protected resource never hands out a raw record: a value which is itself
+  # guarded by a policy comes back as that policy's own protected resource, so nested reads run
+  # nested rules without every call site having to remember to ask.
+  #
+  # On `:soft` none of that happens. A `.nested` declaration is inert: the value is handed back
+  # exactly as the target returned it - the same record, the same relation, still lazy, with
+  # every item in it. Soft exists to be switched on in a running application without changing
+  # anything a caller receives, so declarations can be written and reviewed long before the
+  # behaviour they describe is turned on. What `:hard` would do instead is found by running in
+  # `:hard`, not by reading soft's output.
   class ProtectedResource
-    # `nested` marks a resource the gem wrapped on the caller's behalf rather than one the
-    # caller asked for. The two answer a denied attribute differently: nilling it is the whole
-    # contract of a resource you asked for, but on a nested one it is new behaviour which a
-    # `.nested` declaration would otherwise introduce the moment it was added - so on `:soft`
-    # that is reported and the value still handed over.
-    def initialize(policy, nested: false)
+    def initialize(policy)
       @policy = policy
-      @nested = nested
     end
 
     def method_missing(method_name, *args)
       return super unless target_respond_to?(method_name, *args)
 
       attribute = policy.attribute(method_name)
-      return denied(attribute, method_name, args) unless attribute.readable?
+      return nil unless attribute.readable?
 
       protect(attribute, policy_target.public_send(method_name, *args))
     end
@@ -33,52 +34,45 @@ module ResourcePolicy
 
     private
 
-    attr_reader :policy, :nested
-
-    def denied(attribute, method_name, args)
-      return nil unless nested
-
-      withhold = ResourcePolicy.config.withhold_denied_nested_attribute?(
-        policy: policy, attribute: attribute
-      )
-      return nil if withhold
-
-      protect(attribute, policy_target.public_send(method_name, *args))
-    end
+    attr_reader :policy
 
     def protect(attribute, value)
       return value if value.nil?
       return value if attribute.unprotected?
       return protect_collection(attribute, value) if collection?(value)
+      return protect_declared(attribute, value) if attribute.nested?
 
-      nested_policy = attribute.nested_policy_for(value)
-      return protect_nested(attribute, nested_policy) if nested_policy
-      return value unless ResourcePolicy.config.protectable_class?(value.class)
-
-      # Raises in `:hard`. In `:soft` the warning is the whole signal and the data still flows,
-      # so an app mid-migration keeps working.
-      ResourcePolicy.config.report_unprotected_nested_value(
-        policy: policy, attribute: attribute, value_class: value.class
-      )
+      report_undeclared(attribute, value.class)
       value
     end
 
-    # A nested object the viewer may not read at all is withheld entirely on `:hard`, rather
-    # than handed out as a proxy whose every attribute answers nil. On `:soft` it is reported
-    # and still handed over, so switching the mode on never changes what a caller sees.
-    def protect_nested(attribute, nested_policy)
-      return nested_resource(nested_policy) if readable_policy?(nested_policy)
+    # A declaration says what `:hard` does. On `:soft` it is inert, so the value is handed back
+    # as it came and nothing is reported: the declaration is already visible in the policy.
+    def protect_declared(attribute, value)
+      return value unless ResourcePolicy.config.hard?
 
-      withhold = ResourcePolicy.config.withhold_denied_nested_read?(
-        policy: policy, attribute: attribute, nested_policy: nested_policy
-      )
-      return nil if withhold
+      nested_policy = attribute.nested_policy_for(value)
+      return value unless nested_policy
 
-      nested_resource(nested_policy)
+      protect_nested(attribute, nested_policy)
     end
 
-    def nested_resource(nested_policy)
-      self.class.new(nested_policy, nested: true)
+    # Raises in `:hard`. In `:soft` the warning is the whole signal and the data still flows,
+    # so an app mid-migration keeps working.
+    def report_undeclared(attribute, value_class)
+      return unless ResourcePolicy.config.protectable_class?(value_class)
+
+      ResourcePolicy.config.report_unprotected_nested_value(
+        policy: policy, attribute: attribute, value_class: value_class
+      )
+    end
+
+    # Reached on `:hard` only. A nested object the viewer may not read at all is withheld
+    # entirely, rather than handed out as a proxy whose every attribute answers nil.
+    def protect_nested(_attribute, nested_policy)
+      return nil unless readable_policy?(nested_policy)
+
+      nested_policy.protected_resource
     end
 
     def readable_policy?(nested_policy)
@@ -94,9 +88,7 @@ module ResourcePolicy
     # relation, so a list attribute costs no query and keeps `.includes`, `.where` and the rest
     # for the callers which never needed wrapping.
     def protect_collection(attribute, collection)
-      # Wrapping items is the only case which has to give up the relation. `filter_map` drops
-      # the items `:hard` withholds; on `:soft` nothing is withheld, so nothing is dropped.
-      return collection.filter_map { |item| protect(attribute, item) } if attribute.nested?
+      return wrap_items(attribute, collection) if attribute.nested?
 
       item_class = collection_item_class(collection)
       return collection if item_class.nil?
@@ -106,6 +98,21 @@ module ResourcePolicy
         policy: policy, attribute: attribute, value_class: item_class
       )
       collection
+    end
+
+    # Wrapping items is the only case which has to give up the relation, so it happens on
+    # `:hard` alone: a relation handed to a caller on `:soft` is the one the target returned,
+    # lazy and chainable, holding everything it held. `nil` entries survive the wrapping,
+    # because only the items the viewer may not read are meant to disappear.
+    def wrap_items(attribute, collection)
+      return collection unless ResourcePolicy.config.hard?
+
+      collection.each_with_object([]) do |item, wrapped|
+        next wrapped << nil if item.nil?
+
+        protected_item = protect(attribute, item)
+        wrapped << protected_item unless protected_item.nil?
+      end
     end
 
     # `klass` is what an ActiveRecord::Relation answers without loading anything, so a relation

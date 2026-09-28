@@ -120,18 +120,14 @@ module ResourcePolicy
             ResourcePolicy.config.reporter = ->(event) { reported << event }
           end
 
-          it 'still hands the value over, so turning the mode on changes nothing for callers' do
-            expect(protected_resource.current_contract).to be_a(ProtectedResource)
+          it 'hands back the record itself, exactly as the target returned it' do
+            expect(protected_resource.current_contract).to be(contract)
           end
 
-          it 'warns instead, naming the attribute and the policy which denied it' do
+          it 'says nothing, because a declaration is visible in the policy already' do
             protected_resource.current_contract
-            expect(reported.last.message).to include(':current_contract').and include('denies reading it')
-          end
 
-          it 'reports the nested policy which made the decision' do
-            protected_resource.current_contract
-            expect(reported.last.nested_policy).to be_a(contract_policy_class)
+            expect(reported).to be_empty
           end
         end
       end
@@ -172,8 +168,8 @@ module ResourcePolicy
               ResourcePolicy.config.reporter = ->(_event) {}
             end
 
-            it 'hands it over and warns' do
-              expect(protected_resource.current_contract).to be_a(ProtectedResource)
+            it 'hands the record over, because soft applies no declaration' do
+              expect(protected_resource.current_contract).to be(contract)
             end
           end
         end
@@ -203,13 +199,14 @@ module ResourcePolicy
               ResourcePolicy.config.reporter = ->(event) { reported << event }
             end
 
-            it 'keeps every item, because soft withholds nothing' do
-              expect(protected_resource.contracts).to all(be_a(ProtectedResource))
+            it 'hands the collection back untouched, items and all' do
+              expect(protected_resource.contracts).to eq([contract])
             end
 
-            it 'warns once per withheld item' do
+            it 'says nothing' do
               protected_resource.contracts
-              expect(reported.size).to eq(1)
+
+              expect(reported).to be_empty
             end
           end
         end
@@ -224,11 +221,9 @@ module ResourcePolicy
       end
     end
 
-    # The rule which matters during a rollout: adding a `.nested` declaration must not start
-    # hiding values the moment it is deployed. Only `:hard` hides; `:soft` says what would be.
+    # The rule which matters during a rollout: adding a `.nested` declaration must not change
+    # anything until `:hard` is switched on.
     describe 'an attribute the nested policy denies' do
-      # The object as a whole is readable; only this one attribute is not. Denying the whole
-      # object is the other case, covered above.
       let(:contract_policy_class) do
         Struct.new(:contract, :viewer) do
           include ResourcePolicy::Policy
@@ -254,39 +249,10 @@ module ResourcePolicy
       end
 
       context 'when configured soft' do
-        let(:reported) { [] }
-
-        before do
-          ResourcePolicy.config.nested_protection = :soft
-          ResourcePolicy.config.reporter = ->(event) { reported << event }
-        end
-
-        it 'still hands the value over, so deploying the declaration changes nothing' do
-          expect(protected_resource.current_contract.hours).to eq(37)
-        end
-
-        it 'says which attribute :hard would have hidden' do
-          protected_resource.current_contract.hours
-
-          expect(reported.map { |event| event.attribute.name }).to eq([:hours])
-        end
-
-        it 'reports it as an attribute denial, not a missing declaration' do
-          protected_resource.current_contract.hours
-
-          expect(reported.map(&:class)).to eq([Configuration::DeniedNestedAttributeRead])
-        end
-      end
-
-      # A resource the caller asked for by name has always nilled what its own rules deny, and
-      # that is its contract, not something this feature introduced.
-      context 'when the resource was asked for directly rather than nested' do
-        subject(:protected_resource) { contract_policy_class.new(contract, viewer).protected_resource }
-
         before { ResourcePolicy.config.nested_protection = :soft }
 
-        it 'still nils the attribute on :soft' do
-          expect(protected_resource.hours).to be_nil
+        it 'is the raw record, so the value is reachable exactly as it was' do
+          expect(protected_resource.current_contract.hours).to eq(37)
         end
       end
     end
@@ -486,7 +452,14 @@ module ResourcePolicy
             end
           end
 
-          it 'reads it once, because every item has to be wrapped' do
+          it 'reads no row on :soft, because the declaration is not applied' do
+            protected_resource.contracts
+
+            expect(relation.loads).to eq(0)
+          end
+
+          it 'reads it once on :hard, because every item has to be wrapped' do
+            ResourcePolicy.config.nested_protection = :hard
             protected_resource.contracts
 
             expect(relation.loads).to eq(1)
@@ -544,6 +517,54 @@ module ResourcePolicy
         it 'says nothing about what it would have held, so it is handed back untouched' do
           expect(protected_resource.contracts).to eq([])
         end
+      end
+    end
+
+    # The question the rollout turns on: with declarations in place, is `:soft` distinguishable
+    # from an application which has never heard of this gem?
+    describe 'soft against no protection at all' do
+      let(:relation) { relation_class.new([contract, nil], klass: contract_class) }
+      let(:target) { target_class.new(contract, relation, 'John') }
+
+      def read_everything
+        {
+          single: protected_resource.current_contract,
+          list: protected_resource.contracts,
+          plain: protected_resource.name
+        }
+      end
+
+      # The baseline is the target itself: what a caller would get with no policy in the way
+      # at all, which is what the application does today.
+      it 'hands back the very same objects the target would' do
+        ResourcePolicy.config.nested_protection = :soft
+
+        expect(read_everything).to eq(
+          single: target.current_contract, list: target.contracts, plain: target.name
+        )
+      end
+
+      it 'leaves the list a relation, not an array' do
+        ResourcePolicy.config.nested_protection = :soft
+
+        expect(protected_resource.contracts).to be(relation)
+      end
+
+      it 'keeps every item in it, including the empty ones' do
+        ResourcePolicy.config.nested_protection = :soft
+
+        expect(protected_resource.contracts.to_a).to eq([contract, nil])
+      end
+
+      it 'never reads a row from it' do
+        ResourcePolicy.config.nested_protection = :soft
+        protected_resource.contracts
+
+        expect(relation.loads).to eq(0)
+      end
+
+      it 'is distinguishable on :hard, which is where the declaration takes effect' do
+        expect(protected_resource.contracts).to be_a(Array)
       end
     end
 

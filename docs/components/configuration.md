@@ -62,23 +62,25 @@ relation without loading it.
 
 How hard the gem leans on a nested value it cannot vouch for.
 
-**`:soft` never changes what a caller gets.** It reports and hands the value over, every time,
-so you can switch it on in a running app and read the logs without touching behaviour.
-**`:hard` enforces.**
+**`:soft` changes nothing at all.** It is an observation mode: a value is handed back exactly
+as the policy target returned it — the same record, the same relation, still lazy, with every
+item in it. The only thing it does is report the values nobody has declared yet.
+**`:hard` enforces**, and is the only mode in which a `.nested` declaration does anything.
 
 | situation | `:soft` | `:hard` |
 |---|---|---|
 | protectable value with no declaration | warns, returns the value | raises `UnprotectedNestedValueError` |
-| nested policy denies the object | warns, returns the value | returns `nil` |
-| nested policy denies one of its attributes | warns, returns the value | returns `nil` |
+| value with a `.nested` declaration | returns the value untouched | returns the nested policy's protected resource |
+| collection with a `.nested` declaration | returns the collection untouched | returns an `Array` of protected resources |
+| nested policy denies the object | — the declaration is inert | returns `nil` |
+| nested policy denies one of its attributes | — the declaration is inert | returns `nil` |
 
-The last row is what makes a declaration safe to deploy. Adding
-`.nested { ContractPolicy.new(_1) }` to a policy would otherwise start hiding every contract
-attribute the viewer cannot read the moment it shipped; on `:soft` it only says so.
-
-A resource you asked for by name behaves as it always has: `policy.protected_resource` nils
-what its own rules deny, in both modes. The mode only governs the resources the gem wrapped on
-your behalf.
+That split is the point: declarations can be written, reviewed and deployed while the
+application behaves exactly as it did, and the flip to `:hard` is the single moment anything
+changes. It does mean `:soft` cannot tell you *which* nested values `:hard` would hide —
+nothing is wrapped, so nothing is there to notice it. Run your test suite or a staging
+environment in `:hard` to get that list: a missing declaration raises, and a denied read shows
+up as a failing expectation.
 
 `:hard` is the default on purpose.
 
@@ -93,9 +95,9 @@ or, if the value needs no policy, with `c.attribute(:absences).unprotected(becau
 
 ### config#reporter
 
-Called on `:soft` with an `UnprotectedNestedValue` (no declaration), a `DeniedNestedRead` (the
-nested policy denied the whole object) or a `DeniedNestedAttributeRead` (it denied one
-attribute of it). It exists so you can attach context the gem knows nothing about:
+Called on `:soft` with an `UnprotectedNestedValue`: a value whose class is protectable and
+whose attribute carries no declaration. It exists so you can attach context the gem knows
+nothing about:
 
 ```ruby
 config.reporter = lambda do |event|
@@ -108,9 +110,8 @@ config.reporter = lambda do |event|
 end
 ```
 
-All three events expose `#policy`, `#attribute` and `#message`; `UnprotectedNestedValue` adds
-`#value_class` (the class, not the record, so log events never carry the data they warn about)
-and `DeniedNestedRead` adds `#nested_policy`. The default writes the message to
+The event exposes `#policy`, `#attribute`, `#message` and `#value_class` — the class, not the
+record, so log events never carry the data they warn about. The default writes the message to
 `stderr`.
 
 ### Declaring nested attributes
@@ -185,9 +186,10 @@ protected_user.contracts.includes(:employer) # still a relation when nothing nee
 - **undeclared, or `unprotected`** — the collection is handed back as it came, so an
   `ActiveRecord::Relation` stays a relation and callers can keep chaining `.where`, `.includes`
   and `.order`.
-- **`nested`** — every item is wrapped, which forces the query and returns an `Array`. On
-  `:hard`, items the nested policy withholds are dropped, so the result never contains `nil`s;
-  on `:soft` nothing is withheld, so every item survives and each denial is warned about.
+- **`nested`, on `:soft`** — handed back as it came, exactly as above: the declaration is inert.
+- **`nested`, on `:hard`** — every item is wrapped, which forces the query and returns an
+  `Array`. Items the nested policy withholds are dropped; `nil` entries survive, because only
+  the items the viewer may not read are meant to disappear.
 - **empty relation** — still decided, because a relation knows its item class whether or not it
   holds rows. A missing declaration is therefore caught on the same code path every time,
   rather than only when the data happens to be there.
@@ -196,19 +198,21 @@ protected_user.contracts.includes(:employer) # still a relation when nothing nee
 
 **Deciding a collection costs no query at all.** Nothing reads an element: whether an attribute
 is declared is a property of the attribute, and the item class of an unloaded relation is a
-property of the relation. Only the `nested` case touches the rows, and it has to, because every
-item is being wrapped.
+property of the relation. Only wrapping touches the rows, and that happens on `:hard` alone.
 
 ### Rolling it out
 
-Switching `protectable` on in an existing app will surface every record-returning attribute at
-once, so introduce it in stages:
+Switching `protectable_class` on in an existing app will surface every record-returning
+attribute at once, so introduce it in stages:
 
-1. Set `nested_protection` to `:soft` everywhere and run the test suite to collect the list of
-   attributes needing declarations.
-2. Declare them, policy by policy, with `nested` or `unprotected`.
-3. Move development and test to `:hard`, so new gaps are caught immediately.
-4. Soak in production on `:soft` until the warnings stop, then switch it to `:hard` too.
+1. Set `nested_protection` to `:soft` everywhere. Nothing a caller receives changes, so this is
+   safe to deploy on its own, and the warnings are the inventory of attributes needing
+   declarations.
+2. Declare them, policy by policy, with `nested` or `unprotected`. These are safe to deploy
+   too: on `:soft` a declaration does nothing.
+3. Move test and development to `:hard`. This is where declarations start acting, so it is
+   where you find out what they change — a run of the suite lists it.
+4. Fix what that surfaces, then flip production to `:hard`.
 
-Step 4 matters: `:hard` raises on values which are reaching users today, so anything still
-warning in the logs needs a declaration before the switch.
+Step 3 carries the risk, and it is deliberately the step you take on a machine rather than in
+production. Everything before it is inert by construction.
