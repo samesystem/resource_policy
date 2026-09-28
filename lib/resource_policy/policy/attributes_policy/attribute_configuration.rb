@@ -38,6 +38,12 @@ module ResourcePolicy
           @unprotected
         end
 
+        # Whether a nested policy is declared at all. Answerable without a value, which is what
+        # lets a collection be decided before anything is read from it.
+        def nested?
+          !nested_policy_builder.nil?
+        end
+
         def initialize_copy(other)
           super
           @allowed_actions = @allowed_actions.dup.transform_values(&:dup)

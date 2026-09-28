@@ -36,6 +36,10 @@ module ResourcePolicy
           attribute_config.unprotected?
         end
 
+        def nested?
+          attribute_config.nested?
+        end
+
         def allowed_to?(access_level)
           @allowed_to ||= {}
           level_name = access_level.to_sym

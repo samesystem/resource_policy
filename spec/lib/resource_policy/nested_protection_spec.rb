@@ -15,11 +15,16 @@ module ResourcePolicy
       Class.new do
         include Enumerable
 
-        def initialize(items)
+        attr_reader :klass, :loads
+
+        def initialize(items, klass:)
           @items = items
+          @klass = klass
+          @loads = 0
         end
 
         def each(&block)
+          @loads += 1
           @items.each(&block)
         end
 
@@ -84,7 +89,7 @@ module ResourcePolicy
     let(:policy) { policy_class.new(target, viewer) }
 
     before do
-      ResourcePolicy.config.protectable = ->(value) { value.is_a?(record_class) }
+      ResourcePolicy.config.protectable_class = ->(klass) { klass <= record_class }
     end
 
     after do
@@ -219,6 +224,73 @@ module ResourcePolicy
       end
     end
 
+    # The rule which matters during a rollout: adding a `.nested` declaration must not start
+    # hiding values the moment it is deployed. Only `:hard` hides; `:soft` says what would be.
+    describe 'an attribute the nested policy denies' do
+      # The object as a whole is readable; only this one attribute is not. Denying the whole
+      # object is the other case, covered above.
+      let(:contract_policy_class) do
+        Struct.new(:contract, :viewer) do
+          include ResourcePolicy::Policy
+
+          policy do |c|
+            c.policy_target :contract
+            c.action(:read).allowed
+            c.attribute(:hours).allowed(:read, if: :hours_readable?)
+          end
+
+          private
+
+          def hours_readable?
+            viewer.hours_reader?
+          end
+        end
+      end
+
+      let(:viewer) { double('Viewer', hours_reader?: false) } # rubocop:disable RSpec/VerifiedDoubles
+
+      it 'is nil on :hard' do
+        expect(protected_resource.current_contract.hours).to be_nil
+      end
+
+      context 'when configured soft' do
+        let(:reported) { [] }
+
+        before do
+          ResourcePolicy.config.nested_protection = :soft
+          ResourcePolicy.config.reporter = ->(event) { reported << event }
+        end
+
+        it 'still hands the value over, so deploying the declaration changes nothing' do
+          expect(protected_resource.current_contract.hours).to eq(37)
+        end
+
+        it 'says which attribute :hard would have hidden' do
+          protected_resource.current_contract.hours
+
+          expect(reported.map { |event| event.attribute.name }).to eq([:hours])
+        end
+
+        it 'reports it as an attribute denial, not a missing declaration' do
+          protected_resource.current_contract.hours
+
+          expect(reported.map(&:class)).to eq([Configuration::DeniedNestedAttributeRead])
+        end
+      end
+
+      # A resource the caller asked for by name has always nilled what its own rules deny, and
+      # that is its contract, not something this feature introduced.
+      context 'when the resource was asked for directly rather than nested' do
+        subject(:protected_resource) { contract_policy_class.new(contract, viewer).protected_resource }
+
+        before { ResourcePolicy.config.nested_protection = :soft }
+
+        it 'still nils the attribute on :soft' do
+          expect(protected_resource.hours).to be_nil
+        end
+      end
+    end
+
     describe 'a value which needs no policy' do
       it 'is returned untouched' do
         expect(protected_resource.name).to eq('John')
@@ -284,7 +356,7 @@ module ResourcePolicy
     end
 
     describe 'a relation-backed collection' do
-      let(:relation) { relation_class.new([contract]) }
+      let(:relation) { relation_class.new([contract], klass: contract_class) }
       let(:target) { target_class.new(contract, relation, 'John') }
 
       context 'when the attribute is opted out' do
@@ -344,8 +416,86 @@ module ResourcePolicy
         end
       end
 
+      # The decision is taken on every list read on every screen, so it has to cost nothing.
+      # `loads` counts the times the relation was enumerated.
+      context 'when deciding what to do with it' do
+        let(:policy_class) do
+          Struct.new(:target, :viewer) do
+            include ResourcePolicy::Policy
+
+            policy do |c|
+              c.policy_target :target
+              c.attribute(:contracts).allowed(:read)
+            end
+          end
+        end
+
+        before do
+          ResourcePolicy.config.nested_protection = :soft
+          ResourcePolicy.config.reporter = ->(_event) {}
+        end
+
+        it 'reads no row from an undeclared relation' do
+          protected_resource.contracts
+
+          expect(relation.loads).to eq(0)
+        end
+
+        context 'when the attribute is opted out' do
+          let(:policy_class) do
+            Struct.new(:target, :viewer) do
+              include ResourcePolicy::Policy
+
+              policy do |c|
+                c.policy_target :target
+                c.attribute(:contracts).allowed(:read).unprotected(because: 'checked elsewhere')
+              end
+            end
+          end
+
+          it 'reads no row' do
+            protected_resource.contracts
+
+            expect(relation.loads).to eq(0)
+          end
+        end
+
+        context 'when the host app has not switched protection on' do
+          before { ResourcePolicy.config.protectable_class = Configuration::DEFAULT_PROTECTABLE_CLASS }
+
+          it 'reads no row' do
+            protected_resource.contracts
+
+            expect(relation.loads).to eq(0)
+          end
+        end
+
+        context 'when the attribute declares a nested policy' do
+          let(:policy_class) do
+            nested_class = contract_policy_class
+
+            Struct.new(:target, :viewer) do
+              include ResourcePolicy::Policy
+
+              policy do |c|
+                c.policy_target :target
+                c.attribute(:contracts)
+                 .allowed(:read)
+                 .nested { |contract| nested_class.new(contract, viewer) }
+              end
+            end
+          end
+
+          it 'reads it once, because every item has to be wrapped' do
+            protected_resource.contracts
+
+            expect(relation.loads).to eq(1)
+          end
+        end
+      end
+
       context 'when the collection is empty' do
-        let(:relation) { relation_class.new([]) }
+        let(:relation) { relation_class.new([], klass: contract_class) }
 
         let(:policy_class) do
           Struct.new(:target, :viewer) do
@@ -358,8 +508,41 @@ module ResourcePolicy
           end
         end
 
-        it 'has nothing to vouch for, so it is handed back untouched' do
-          expect(protected_resource.contracts).to respond_to(:includes)
+        it 'is still decided, because a relation knows its item class whether or not it holds rows' do
+          expect { protected_resource.contracts }
+            .to raise_error(Configuration::UnprotectedNestedValueError, /:contracts/)
+        end
+      end
+    end
+
+    describe 'an array-backed collection' do
+      let(:target) { target_class.new(contract, items, 'John') }
+
+      let(:policy_class) do
+        Struct.new(:target, :viewer) do
+          include ResourcePolicy::Policy
+
+          policy do |c|
+            c.policy_target :target
+            c.attribute(:contracts).allowed(:read)
+          end
+        end
+      end
+
+      context 'when it holds records' do
+        let(:items) { [contract] }
+
+        it 'is decided from the item it already holds in memory' do
+          expect { protected_resource.contracts }
+            .to raise_error(Configuration::UnprotectedNestedValueError, /:contracts/)
+        end
+      end
+
+      context 'when it is empty' do
+        let(:items) { [] }
+
+        it 'says nothing about what it would have held, so it is handed back untouched' do
+          expect(protected_resource.contracts).to eq([])
         end
       end
     end

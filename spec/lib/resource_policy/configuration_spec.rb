@@ -40,19 +40,19 @@ module ResourcePolicy
 
     describe '#protectable?' do
       it 'treats nothing as protectable until the host app says otherwise' do
-        expect(config).not_to be_protectable(record)
+        expect(config).not_to be_protectable_class(record.class)
       end
 
-      it 'asks the configured callable' do
-        config.protectable = ->(value) { value.is_a?(record.class) }
+      it 'asks the configured callable about the class, never the value' do
+        config.protectable_class = ->(klass) { klass <= record.class }
 
-        expect(config).to be_protectable(record)
+        expect(config).to be_protectable_class(record.class)
       end
     end
 
     describe '#report_unprotected_nested_value' do
       def report
-        config.report_unprotected_nested_value(policy: policy, attribute: attribute, value: record)
+        config.report_unprotected_nested_value(policy: policy, attribute: attribute, value_class: record.class)
       end
 
       context 'when the mode is hard' do

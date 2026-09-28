@@ -17,36 +17,46 @@ In a Rails app, add an initializer:
 ```ruby
 # config/initializers/resource_policy.rb
 ResourcePolicy.configure do |config|
-  config.protectable = ->(value) { value.is_a?(ActiveRecord::Base) }
+  config.protectable_class = ->(klass) { klass <= ActiveRecord::Base }
   config.nested_protection = Rails.env.local? ? :hard : :soft
   config.reporter = ->(event) { Rails.logger.warn(event.message) }
 end
 ```
 
-### config#protectable
+### config#protectable_class
 
-A callable which answers **"is this value something which must carry a policy of its own?"**
+A callable which answers **"does this kind of value have to carry a policy of its own?"**
 
-It is called with every value a protected resource is about to return:
+It is called with the **class** of every value a protected resource is about to return, never
+with the value:
 
 ```ruby
 protected_user.first_name       # String   -> not a record -> returned as is
 protected_user.current_contract # Contract -> a record     -> must be declared
 ```
 
-Values which pass the check need either a `.nested` or an `.unprotected` declaration on the
+Asking about a class rather than a value is what keeps list attributes free. An
+`ActiveRecord::Relation` answers `klass` without loading anything, so `protected_user.contracts`
+is decided with no query; asking about a value would mean fetching a row behind every list read
+on every screen, including the reads which turn out to need no protection at all.
+
+Classes which pass the check need either a `.nested` or an `.unprotected` declaration on the
 attribute. Everything else — strings, numbers, dates, enums, plain value objects — is handed
 back untouched.
 
-The default is `->(_value) { false }`, which means nothing is a record and the guard never
+The default is `->(_klass) { false }`, which means nothing is a record and the guard never
 fires. Setting it is what switches nested protection on.
 
 `ActiveRecord::Base` is the usual answer, but it is a dial rather than a constant. Widen it if
 you have plain Ruby objects, or view-layer objects, holding sensitive fields:
 
 ```ruby
-config.protectable = ->(value) { value.is_a?(ActiveRecord::Base) || value.is_a?(GraphqlRails::Decorator) }
+config.protectable_class = ->(klass) { klass <= ActiveRecord::Base || klass <= GraphqlRails::Decorator }
 ```
+
+The trade-off is that the decision cannot depend on the value — "only protect persisted
+records" is not expressible. That is deliberate: a per-value rule cannot be answered for a
+relation without loading it.
 
 ### config#nested_protection
 
@@ -59,7 +69,16 @@ so you can switch it on in a running app and read the logs without touching beha
 | situation | `:soft` | `:hard` |
 |---|---|---|
 | protectable value with no declaration | warns, returns the value | raises `UnprotectedNestedValueError` |
-| nested policy denies the read | warns, returns the value | returns `nil` |
+| nested policy denies the object | warns, returns the value | returns `nil` |
+| nested policy denies one of its attributes | warns, returns the value | returns `nil` |
+
+The last row is what makes a declaration safe to deploy. Adding
+`.nested { ContractPolicy.new(_1) }` to a policy would otherwise start hiding every contract
+attribute the viewer cannot read the moment it shipped; on `:soft` it only says so.
+
+A resource you asked for by name behaves as it always has: `policy.protected_resource` nils
+what its own rules deny, in both modes. The mode only governs the resources the gem wrapped on
+your behalf.
 
 `:hard` is the default on purpose.
 
@@ -74,9 +93,9 @@ or, if the value needs no policy, with `c.attribute(:absences).unprotected(becau
 
 ### config#reporter
 
-Called on `:soft` with an `UnprotectedNestedValue` (no declaration) or a `DeniedNestedRead`
-(the nested policy said no). It exists so you can attach
-context the gem knows nothing about:
+Called on `:soft` with an `UnprotectedNestedValue` (no declaration), a `DeniedNestedRead` (the
+nested policy denied the whole object) or a `DeniedNestedAttributeRead` (it denied one
+attribute of it). It exists so you can attach context the gem knows nothing about:
 
 ```ruby
 config.reporter = lambda do |event|
@@ -89,8 +108,9 @@ config.reporter = lambda do |event|
 end
 ```
 
-Both events expose `#policy`, `#attribute` and `#message`; `UnprotectedNestedValue` adds
-`#value` and `DeniedNestedRead` adds `#nested_policy`. The default writes the message to
+All three events expose `#policy`, `#attribute` and `#message`; `UnprotectedNestedValue` adds
+`#value_class` (the class, not the record, so log events never carry the data they warn about)
+and `DeniedNestedRead` adds `#nested_policy`. The default writes the message to
 `stderr`.
 
 ### Declaring nested attributes
@@ -146,6 +166,9 @@ is logged instead:
 ```ruby
 protected_user.current_contract # => nil on :hard when ContractPolicy denies the read
                                 # => ProtectedResource on :soft, plus a logged warning
+
+protected_user.current_contract.salary_nr # => nil on :hard when ContractPolicy denies salary_nr
+                                          # => the value on :soft, plus a logged warning
 ```
 
 "May not read at all" means the nested policy's `:read` action is denied, or — when it declares
@@ -165,10 +188,16 @@ protected_user.contracts.includes(:employer) # still a relation when nothing nee
 - **`nested`** — every item is wrapped, which forces the query and returns an `Array`. On
   `:hard`, items the nested policy withholds are dropped, so the result never contains `nil`s;
   on `:soft` nothing is withheld, so every item survives and each denial is warned about.
-- **empty** — there is nothing to vouch for, so it is returned untouched and nothing is reported.
+- **empty relation** — still decided, because a relation knows its item class whether or not it
+  holds rows. A missing declaration is therefore caught on the same code path every time,
+  rather than only when the data happens to be there.
+- **empty `Array`** — the one case which cannot be decided: an array which holds nothing says
+  nothing about what it would have held, so it is handed back untouched and nothing is reported.
 
-Deciding an undeclared collection costs one `.first` — a `LIMIT 1` on an unloaded relation,
-free on one already loaded.
+**Deciding a collection costs no query at all.** Nothing reads an element: whether an attribute
+is declared is a property of the attribute, and the item class of an unloaded relation is a
+property of the relation. Only the `nested` case touches the rows, and it has to, because every
+item is being wrapped.
 
 ### Rolling it out
 
