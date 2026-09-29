@@ -20,3 +20,4 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
           flags: rspec
+          fail_ci_if_error: true
