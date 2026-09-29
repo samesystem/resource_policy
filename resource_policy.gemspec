@@ -37,11 +37,11 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency 'bundler', '~> 4.0'
   spec.add_development_dependency 'pry-byebug'
+  spec.add_development_dependency 'rails', '~> 8.0.0'
   spec.add_development_dependency 'rake', '~> 13.0'
   spec.add_development_dependency 'rspec', '~> 3.0'
   spec.add_development_dependency 'rubocop'
   spec.add_development_dependency 'rubocop-performance'
   spec.add_development_dependency 'rubocop-rails'
   spec.add_development_dependency 'rubocop-rspec'
-  spec.add_development_dependency 'rails', '~> 8.0.0'
 end

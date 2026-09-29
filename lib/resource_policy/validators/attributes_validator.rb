@@ -39,14 +39,12 @@ module ResourcePolicy
     private
 
     def validate_attribute_policy(attribute_policy, record:, hash_attribute:)
-      if attribute_policy.nil?
-        return add_missing_policy_error_for(record, attribute: hash_attribute)
-      end
+      return add_missing_policy_error_for(record, attribute: hash_attribute) if attribute_policy.nil?
 
       access_level = access_level_for(record)
-      if !attribute_policy.allowed_to?(access_level)
-        return add_not_permitted_error_for(record, attribute: hash_attribute)
-      end
+      return if attribute_policy.allowed_to?(access_level)
+
+      add_not_permitted_error_for(record, attribute: hash_attribute)
     end
 
     def access_level_for(record)

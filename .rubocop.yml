@@ -3,7 +3,13 @@ require: rubocop-rspec
 RSpec/NestedGroups:
   Enabled: false
 
-Metrics/LineLength:
+# Policy specs build a small world before they can assert anything - a record, a
+# relation, a nested policy, a viewer - and naming each piece reads better than
+# folding them into one setup block.
+RSpec/MultipleMemoizedHelpers:
+  Enabled: false
+
+Layout/LineLength:
   Enabled: true
   Max: 120
 
@@ -22,7 +28,7 @@ Lint/AmbiguousBlockAssociation:
   Exclude:
     - spec/**/*.rb
 
-Naming/UncommunicativeMethodParamName:
+Naming/MethodParameterName:
   AllowedNames:
     - 'to'
     - 'at'

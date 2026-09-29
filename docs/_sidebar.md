@@ -5,3 +5,4 @@
   * [ActionValidator](components/action_validator)
   * [AttributesPolicy](components/attributes_policy)
   * [AttributesValidator](components/attributes_validator)
+  * [Configuration](components/configuration)

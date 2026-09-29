@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-RSpec.describe ::ResourcePolicy:: Policy::ActionsPolicy::ActionsPolicyModel do
+RSpec.describe ::ResourcePolicy::Policy::ActionsPolicy::ActionsPolicyModel do
   subject(:actions_policy_model) { described_class.new(model_instance) }
 
   let(:policy_model) do

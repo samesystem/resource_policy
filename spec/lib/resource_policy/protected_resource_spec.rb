@@ -63,20 +63,20 @@ module ResourcePolicy
           end
 
           it 'returns false' do
-            expect(protected_resource).not_to be_respond_to(:some_non_policy_attribute)
+            expect(protected_resource).not_to respond_to(:some_non_policy_attribute)
           end
         end
 
         context 'when attribute is specified on policy' do
           it 'returns true' do
-            expect(protected_resource).to be_respond_to(:some_attribute)
+            expect(protected_resource).to respond_to(:some_attribute)
           end
         end
       end
 
       context 'when method does not exist on target' do
         it 'returns false' do
-          expect(protected_resource).not_to be_respond_to(:non_existing_method)
+          expect(protected_resource).not_to respond_to(:non_existing_method)
         end
       end
     end

@@ -33,12 +33,10 @@ RSpec.describe ResourcePolicy::AttributesValidator do
       end
     end
 
-
     let(:params) { { first_name: 'John' } }
     let(:policy) { policy_class.new(allowed: is_allowed) }
     let(:is_allowed) { true }
     let(:access_level) { :write }
-
 
     context 'when attribute matches expected access level' do
       it { is_expected.to be_valid }

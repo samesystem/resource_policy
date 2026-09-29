@@ -27,13 +27,13 @@ module ResourcePolicy::Policy
       let(:actions_policy) { model.new.actions_policy }
 
       context 'when action conditions are passing' do
-        it 'marks actions as allowed ' do
+        it 'marks actions as allowed' do
           expect(actions_policy.create).to be_allowed
         end
       end
 
       context 'when action conditions are failing' do
-        it 'marks actions as not allowed ' do
+        it 'marks actions as not allowed' do
           expect(actions_policy.failing).not_to be_allowed
         end
       end
