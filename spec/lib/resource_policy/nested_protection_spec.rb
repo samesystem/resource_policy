@@ -522,6 +522,133 @@ module ResourcePolicy
 
     # The question the rollout turns on: with declarations in place, is `:soft` distinguishable
     # from an application which has never heard of this gem?
+    # A protected resource answers the attributes its policy declares and nothing else, which is
+    # the whole point of it. Nesting therefore hands a narrow object to whatever consumes the
+    # value, and code which treats it as the record - a decorator, a serialiser, anything
+    # calling an association or a helper - stops working the moment `:hard` is switched on.
+    describe 'a nested value handed to code which expects the record' do
+      let(:contract_class) do
+        Class.new(record_class) do
+          def initialize(hours)
+            super()
+            @hours = hours
+          end
+
+          attr_reader :hours
+
+          def to_param
+            "contract-#{hours}"
+          end
+        end
+      end
+
+      it 'answers the attributes the nested policy declares' do
+        expect(protected_resource.current_contract.hours).to eq(37)
+      end
+
+      it 'raises on anything the nested policy does not declare, rather than answering nil' do
+        expect { protected_resource.current_contract.to_param }
+          .to raise_error(NoMethodError, /to_param/)
+      end
+
+      context 'when configured soft' do
+        before { ResourcePolicy.config.nested_protection = :soft }
+
+        it 'is the record itself, so undeclared methods still work' do
+          expect(protected_resource.current_contract.to_param).to eq('contract-37')
+        end
+      end
+    end
+
+    # The shape most of an application's nested records actually travel in: a decorator which
+    # builds the nested policy itself. Declaring `nested` as well protects the value twice - the
+    # decorator ends up constructing its policy on the proxy, and the policy's own conditions
+    # read the record - so the declaration to use is `unprotected`, with the reason written down.
+    describe 'a value a decorator protects downstream' do
+      let(:decorator_class) do
+        nested_class = contract_policy_class
+        viewer_for_decorator = viewer
+
+        Class.new do
+          define_method(:initialize) { |contract| @contract = contract }
+
+          define_method(:protected_contract) do
+            nested_class.new(@contract, viewer_for_decorator).protected_resource
+          end
+
+          def hours
+            protected_contract.hours
+          end
+        end
+      end
+
+      # A condition which reads the record, exactly as a real policy's conditions do.
+      let(:contract_policy_class) do
+        Struct.new(:contract, :viewer) do
+          include ResourcePolicy::Policy
+
+          policy do |c|
+            c.policy_target :contract
+            c.action(:read).allowed
+            c.attribute(:hours).allowed(:read, if: :readable_contract?)
+          end
+
+          private
+
+          def readable_contract?
+            !contract.ended? && viewer.hours_reader?
+          end
+        end
+      end
+
+      let(:contract_class) do
+        Class.new(record_class) do
+          def initialize(hours)
+            super()
+            @hours = hours
+          end
+
+          attr_reader :hours
+
+          def ended?
+            false
+          end
+        end
+      end
+
+      context 'when the attribute is declared nested' do
+        it 'breaks the decorator, which needs the record its own policy reads' do
+          expect { decorator_class.new(protected_resource.current_contract).hours }
+            .to raise_error(NoMethodError, /ended\?/)
+        end
+      end
+
+      context 'when the attribute is declared unprotected instead' do
+        let(:policy_class) do
+          Struct.new(:target, :viewer) do
+            include ResourcePolicy::Policy
+
+            policy do |c|
+              c.policy_target :target
+              c.attribute(:current_contract)
+               .allowed(:read)
+               .unprotected(because: 'exposed only through the decorator, which applies ContractPolicy')
+            end
+          end
+        end
+
+        it 'hands the record over, so the decorator works' do
+          expect(decorator_class.new(protected_resource.current_contract).hours).to eq(37)
+        end
+
+        it 'loses no protection, because the decorator applies the same policy' do
+          allow(viewer).to receive(:hours_reader?).and_return(false)
+
+          expect(decorator_class.new(protected_resource.current_contract).hours).to be_nil
+        end
+      end
+    end
+
     describe 'soft against no protection at all' do
       let(:relation) { relation_class.new([contract, nil], klass: contract_class) }
       let(:target) { target_class.new(contract, relation, 'John') }

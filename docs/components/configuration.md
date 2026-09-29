@@ -147,6 +147,41 @@ c.attribute(:custom_fields)
   .unprotected(because: 'plain value objects with no sensitive fields')
 ```
 
+### When `nested` is the wrong tool
+
+A protected resource answers the attributes its policy declares and nothing else. That is the
+point of it, but it means a nested value is a narrow object, not a stand-in for the record:
+
+```ruby
+protected_user.current_contract.hours_week # => the value, it is declared
+protected_user.current_contract.shop       # => NoMethodError, no rule declares it
+```
+
+So `nested` fits a value which is consumed *through the policy* — a controller rendering off
+`protected_resource`, a serialiser built on one. It does not fit a value handed to something
+which treats it as the record: a decorator, a presenter, anything reaching for an association
+or a helper. Those break the moment `:hard` is switched on, with a `NoMethodError` rather than
+a hidden field.
+
+Where a decorator is what exposes the value, the decorator is what has to apply the policy:
+
+```ruby
+# not this - the decorator receives a proxy and falls over
+c.attribute(:current_contract).allowed(:read).nested { ContractPolicy.new(_1) }
+
+# this - the value leaves as a decorator which applies ContractPolicy itself
+def contract
+  ContractDecorator.decorate(protected_user.current_contract, app_context:)
+end
+
+c.attribute(:current_contract)
+  .allowed(:read)
+  .unprotected(because: 'exposed only through ContractDecorator, which applies ContractPolicy')
+```
+
+The `unprotected` declaration is doing real work there: it records *why* this value needs no
+policy of its own, so the next reader can check the claim rather than assume it.
+
 ### Reading nested values
 
 Nothing changes at the call site. Reads simply run the nested rules too:
