@@ -24,16 +24,12 @@ module ResourcePolicy
     attr_reader :policy
 
     def target_respond_to?(method_name, *args)
-      accessible_attributes.include?(method_name.to_sym) &&
-        policy_target.respond_to?(method_name, *args)
+      readable_attribute?(method_name) && policy_target.respond_to?(method_name, *args)
     end
 
-    def accessible_attributes
-      attributes = policy.class.policy.attributes.values.select do |attribute|
-        attribute.defined_action?(:read)
-      end
-
-      attributes.map(&:name)
+    def readable_attribute?(name)
+      attribute = policy.class.policy.configured_attribute(name)
+      !attribute.nil? && attribute.defined_action?(:read)
     end
 
     def policy_target

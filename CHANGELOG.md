@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Added: short-hand method for getting allowed actions
 * Added: support for proc type validator options
+* Added: `PolicyConfiguration#configured_attribute` for looking up one configured attribute
+* Changed: protected resource and attributes policy reads look the attribute up directly instead of rebuilding the attributes hash on every read
 * Added/Changed/Deprecated/Removed/Fixed/Security: YOUR CHANGE HERE
 
 ## [1.1.0]
