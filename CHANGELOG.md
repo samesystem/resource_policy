@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Updated: Ruby to 3.2+
 * Added: short-hand method for getting allowed actions
 * Added: support for proc type validator options
+* Added: `PolicyConfiguration#configured_attribute` for looking up one configured attribute
+* Changed: protected resource and attributes policy reads look the attribute up directly instead of rebuilding the attributes hash on every read. These lookups now use `PolicyConfiguration#configured_attribute` and no longer go through `PolicyConfiguration#attributes`; if you override `#attributes` in a custom configuration, override `#configured_attribute` as well
 * Added/Changed/Deprecated/Removed/Fixed/Security: YOUR CHANGE HERE
 
 ## [1.1.0]

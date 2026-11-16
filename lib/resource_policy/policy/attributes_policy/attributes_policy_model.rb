@@ -13,9 +13,7 @@ module ResourcePolicy
         end
 
         def all
-          @all ||= config.attributes.keys.map do |attribute_name|
-            policy_item(attribute_name)
-          end
+          @all ||= config.attributes.values.map { |attribute| policy_item(attribute) }
         end
 
         def all_allowed_to(status)
@@ -23,13 +21,14 @@ module ResourcePolicy
         end
 
         def method_missing(method_name)
-          return super unless config.attributes.key?(method_name.to_sym)
+          attribute = config.configured_attribute(method_name)
+          return super unless attribute
 
-          policy_item(method_name.to_sym)
+          policy_item(attribute)
         end
 
         def respond_to_missing?(method_name, *args)
-          config.attributes.key?(method_name.to_sym) || super
+          !config.configured_attribute(method_name).nil? || super
         end
 
         private
@@ -40,11 +39,8 @@ module ResourcePolicy
           policy.class.policy
         end
 
-        def policy_item(name)
-          @policy_item_by_name[name] ||= begin
-            attribute = config.attributes.fetch(name)
-            AttributePolicy.new(attribute, policy: policy)
-          end
+        def policy_item(attribute)
+          @policy_item_by_name[attribute.name] ||= AttributePolicy.new(attribute, policy: policy)
         end
       end
     end

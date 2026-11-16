@@ -46,6 +46,12 @@ module ResourcePolicy
         @attributes.select { |_name, action| action.configured? }
       end
 
+      # Same as `attributes[attribute_name.to_sym]`, without building the whole hash on every read.
+      def configured_attribute(attribute_name)
+        attribute = @attributes[attribute_name.to_sym]
+        attribute if attribute&.configured?
+      end
+
       def actions
         @actions.select { |_name, action| action.configured? }
       end
