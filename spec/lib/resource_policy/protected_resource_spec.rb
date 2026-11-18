@@ -52,6 +52,55 @@ module ResourcePolicy
 
         it { is_expected.to be_nil }
       end
+
+      context 'when attribute is only allowed to write' do
+        let(:target_class) { Struct.new(:some_attribute, :write_only_attribute) }
+
+        before do
+          policy_class.policy { |c| c.attribute(:write_only_attribute).allowed(:write) }
+        end
+
+        it 'raises NoMethodError' do
+          expect { protected_resource.write_only_attribute }.to raise_error(NoMethodError)
+        end
+      end
+
+      context 'when policy makes attribute readable after first use' do
+        let(:target_class) { Struct.new(:some_attribute, :late_attribute) }
+        let(:target) { target_class.new('Some value', 'Late value') }
+
+        before do
+          protected_resource.respond_to?(:late_attribute)
+          policy_class.policy { |c| c.attribute(:late_attribute).allowed(:read) }
+        end
+
+        it 'returns the attribute value' do
+          expect(protected_resource.late_attribute).to eq('Late value')
+        end
+      end
+
+      context 'when subclass policy makes inherited attribute readable' do
+        let(:target_class) { Struct.new(:some_attribute, :write_only_attribute) }
+        let(:target) { target_class.new('Some value', 'Secret') }
+        let(:subclass) do
+          Class.new(policy_class) do
+            policy { |c| c.attribute(:write_only_attribute).allowed(:read) }
+          end
+        end
+
+        before do
+          policy_class.policy { |c| c.attribute(:write_only_attribute).allowed(:write) }
+        end
+
+        it 'returns the attribute value through the subclass policy' do
+          expect(described_class.new(subclass.new(target, viewer)).write_only_attribute).to eq('Secret')
+        end
+
+        it 'keeps the attribute unreadable through the parent policy' do
+          subclass
+          expect(protected_resource).not_to respond_to(:write_only_attribute)
+        end
+      end
     end
 
     describe '#respond_to?' do

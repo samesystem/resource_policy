@@ -42,6 +42,34 @@ module ResourcePolicy::Policy
       end
     end
 
+    describe '#configured_attribute' do
+      subject(:configured_attribute) { policy_configuration.configured_attribute(name) }
+
+      let(:name) { :something }
+
+      context 'when attribute has allowed actions' do
+        let!(:attribute) { policy_configuration.attribute(:something).allowed(:read) }
+
+        it { is_expected.to be(attribute) }
+
+        context 'when name is a string' do
+          let(:name) { 'something' }
+
+          it { is_expected.to be(attribute) }
+        end
+      end
+
+      context 'when attribute has no allowed actions' do
+        before { policy_configuration.attribute(:something) }
+
+        it { is_expected.to be_nil }
+      end
+
+      context 'when attribute is not defined' do
+        it { is_expected.to be_nil }
+      end
+    end
+
     describe '#action' do
       let(:action) { policy_configuration.action(action_name) }
       let(:action_name) { :read }
