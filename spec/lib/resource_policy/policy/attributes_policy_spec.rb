@@ -52,7 +52,7 @@ module ResourcePolicy::Policy
 
         it 'raises NoMethodError for the attribute' do
           expect { attributes_policy.undecided_attribute }
-            .to raise_error(NoMethodError) { |error| expect(error.name).to eq(:undecided_attribute) }
+            .to raise_error(an_instance_of(NoMethodError).and(having_attributes(name: :undecided_attribute)))
         end
       end
 
