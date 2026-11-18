@@ -3,16 +3,23 @@
 require 'bundler/setup'
 
 require 'simplecov'
+
+if ENV['CI']
+  require 'simplecov-lcov'
+
+  SimpleCov::Formatter::LcovFormatter.config do |config|
+    config.report_with_single_file = true
+    config.single_report_path = 'coverage/lcov.info'
+  end
+
+  SimpleCov.formatter = SimpleCov::Formatter::LcovFormatter
+end
+
 SimpleCov.start do
   add_filter(/_spec.rb\Z/)
 end
 
 require 'resource_policy'
-
-if ENV['CODECOV_TOKEN']
-  require 'codecov'
-  SimpleCov.formatter = SimpleCov::Formatter::Codecov
-end
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
