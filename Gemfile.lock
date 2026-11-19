@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    resource_policy (1.1.0)
+    resource_policy (1.2.0)
 
 GEM
   remote: https://rubygems.org/
@@ -266,6 +266,7 @@ GEM
     zeitwerk (2.8.3)
 
 PLATFORMS
+  arm64-darwin-23
   arm64-darwin-25
   x86_64-linux
 

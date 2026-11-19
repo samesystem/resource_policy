@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-* Updated: Ruby to 3.2+
+* Removed: support for Ruby < 3.2 (CI now tests Ruby 3.2–4.0)
 * Added: short-hand method for getting allowed actions
 * Added: support for proc type validator options
 * Added: `PolicyConfiguration#configured_attribute` for looking up one configured attribute
